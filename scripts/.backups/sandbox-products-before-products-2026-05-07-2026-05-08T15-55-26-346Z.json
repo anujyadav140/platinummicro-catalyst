@@ -1,0 +1,162 @@
+[
+  {
+    "id": 77,
+    "name": "[Sample] Fog Linen Chambray Towel - Beige Stripe",
+    "sku": "SLCTBS",
+    "categories": [
+      23,
+      18
+    ],
+    "brand_id": 0
+  },
+  {
+    "id": 80,
+    "name": "[Sample] Orbit Terrarium - Large",
+    "sku": "OTL",
+    "categories": [
+      19,
+      23
+    ],
+    "brand_id": 0
+  },
+  {
+    "id": 81,
+    "name": "[Sample] Orbit Terrarium - Small",
+    "sku": "OTS",
+    "categories": [
+      19,
+      23
+    ],
+    "brand_id": 0
+  },
+  {
+    "id": 86,
+    "name": "[Sample] Able Brewing System",
+    "sku": "ABS",
+    "categories": [
+      23,
+      21
+    ],
+    "brand_id": 0
+  },
+  {
+    "id": 88,
+    "name": "[Sample] Chemex Coffeemaker 3 Cup",
+    "sku": "CC3C",
+    "categories": [
+      21,
+      23
+    ],
+    "brand_id": 0
+  },
+  {
+    "id": 93,
+    "name": "[Sample] 1 L Le Parfait Jar",
+    "sku": "SLLPJ",
+    "categories": [
+      23,
+      21
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 94,
+    "name": "[Sample] Oak Cheese Grater",
+    "sku": "OCG",
+    "categories": [
+      21,
+      23
+    ],
+    "brand_id": 35
+  },
+  {
+    "id": 97,
+    "name": "[Sample] Tiered Wire Basket",
+    "sku": "TWB",
+    "categories": [
+      21,
+      23
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 98,
+    "name": "[Sample] Laundry Detergent",
+    "sku": "CGLD",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 37
+  },
+  {
+    "id": 103,
+    "name": "[Sample] Canvas Laundry Cart",
+    "sku": "CLC",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 104,
+    "name": "[Sample] Utility Caddy",
+    "sku": "OFSUC",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 107,
+    "name": "[Sample] Dustpan & Brush",
+    "sku": "DPB",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 118,
+    "name": "Dustpan & Brush Template",
+    "sku": "DPB-1",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 120,
+    "name": "CyberForge Alpha",
+    "sku": "CFA-24",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 122,
+    "name": "[Sample] Utility Caddy with Modifier",
+    "sku": "OFSUC-1M",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  },
+  {
+    "id": 123,
+    "name": "[Sample] 2 Utility Caddy with Modifier",
+    "sku": "OFSUC-1M-1",
+    "categories": [
+      23,
+      22
+    ],
+    "brand_id": 36
+  }
+]
