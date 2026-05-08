@@ -1,0 +1,145 @@
+/* =============================================================================
+   @import statements MUST come before any other rules per CSS spec —
+   that includes @tailwind directives, since they expand to real rules.
+   JetBrains Mono is pulled from Google Fonts for SKU/MPN display.
+   ========================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   Platinum Micro brand fonts
+   Google Sans Flex variable font ships locally in /public/fonts.
+   ========================================================================= */
+@font-face {
+  font-family: 'Google Sans Flex';
+  src: url('/fonts/GoogleSansFlex.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---------------------------------------------------------------------------
+     Catalyst stock tokens — kept for compatibility with vanilla components.
+     Overridden so Catalyst's `bg-primary`, `bg-background`, etc. pick up our
+     brand by default.
+     HSL format (space-separated, no commas, no hsl(...) wrapper) is required
+     by Catalyst's `hsl(var(--name))` references.
+     -------------------------------------------------------------------------- */
+  --primary: 7 56% 42%;          /* terracotta #A63D2F */
+  --accent: 213 65% 94%;         /* navy-pale #E6EFF8 */
+  --background: 40 25% 98%;      /* paper #FBFAF7 */
+  --foreground: 218 43% 11%;     /* ink-900 #101828 */
+  --success: 152 47% 34%;        /* #2F7D5B */
+  --error: 7 56% 42%;            /* terracotta as danger */
+  --warning: 36 71% 41%;         /* #B5781F */
+  --info: 216 59% 26%;           /* navy-mid */
+
+  --contrast-100: 220 21% 95%;   /* ink-100 */
+  --contrast-200: 215 16% 91%;   /* ink-200 */
+  --contrast-300: 215 14% 84%;   /* ink-300 */
+  --contrast-400: 217 12% 65%;   /* ink-400 */
+  --contrast-500: 215 14% 45%;   /* ink-500 */
+
+  --font-variation-settings-body: 'slnt' 0;
+  --font-variation-settings-heading: 'slnt' 0;
+  --font-family-body: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-family-heading: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 0.9375rem;   /* 15px PM body default */
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  --shadow-sm: 0 1px 2px rgba(7, 21, 37, 0.06), 0 1px 1px rgba(7, 21, 37, 0.04);
+  --shadow-base: 0 1px 3px 0 rgba(7, 21, 37, 0.10), 0 1px 2px 0 rgba(7, 21, 37, 0.06);
+  --shadow-md: 0 2px 4px rgba(7, 21, 37, 0.06), 0 4px 8px rgba(7, 21, 37, 0.05);
+  --shadow-lg: 0 4px 8px rgba(7, 21, 37, 0.06), 0 12px 24px rgba(7, 21, 37, 0.08);
+  --shadow-xl: 0 10px 20px rgba(7, 21, 37, 0.10), 0 20px 40px rgba(7, 21, 37, 0.10);
+
+  /* ---------------------------------------------------------------------------
+     Platinum Micro brand tokens (used directly via `text-pm-navy-deep` etc.
+     in Tailwind, or `var(--pm-*)` in raw CSS).
+     -------------------------------------------------------------------------- */
+
+  /* Navy stack */
+  --pm-navy-deepest: #071525;
+  --pm-navy-deep:    #0D2340;
+  --pm-navy-mid:     #1B3A6B;
+  --pm-navy-light:   #2E6DB4;
+  --pm-navy-pale:    #E6EFF8;
+
+  /* Terracotta + tan */
+  --pm-terracotta:       #A63D2F;
+  --pm-terracotta-light: #C04E3E;
+  --pm-tan:              #8B7355;
+  --pm-terracotta-pale:  #F7EBE9;
+  --pm-tan-pale:         #F4EFE8;
+
+  /* Surfaces */
+  --pm-paper:  #FBFAF7;
+  --pm-white:  #FFFFFF;
+
+  /* Ink scale */
+  --pm-ink-100: #F2F4F7;
+  --pm-ink-200: #E4E7EC;
+  --pm-ink-300: #D0D5DD;
+  --pm-ink-400: #98A2B3;
+  --pm-ink-500: #667085;
+  --pm-ink-600: #475467;
+  --pm-ink-700: #344054;
+  --pm-ink-800: #1D2939;
+  --pm-ink-900: #101828;
+
+  /* Status (muted, enterprise) */
+  --pm-success:    #2F7D5B;
+  --pm-success-bg: #E8F3EC;
+  --pm-warning:    #B5781F;
+  --pm-warning-bg: #FAF1DF;
+  --pm-danger:     #A63D2F;
+  --pm-danger-bg:  #F7EBE9;
+
+  /* Layout */
+  --pm-container:    1280px;
+  --pm-trust-bar-h:  36px;
+  --pm-header-top-h: 84px;
+  --pm-header-nav-h: 48px;
+
+  /* Motion */
+  --pm-ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+  --pm-ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --pm-dur-fast: 120ms;
+  --pm-dur-base: 180ms;
+  --pm-dur-slow: 280ms;
+}
+
+/* Page-level baseline so even non-PM Catalyst pages get warm paper bg + sans */
+html, body {
+  background: var(--pm-paper);
+  color: var(--pm-ink-900);
+  font-family: var(--font-family-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =============================================================================
+   Hide native spinner arrows on every <input type="number"> across the app.
+   We always pair these inputs with our own custom +/- buttons (PDP buy box,
+   cart drawer, quick-order modal) — the browser's stepper duplicates that
+   control and clutters the UI. Apply once globally so future qty inputs
+   inherit the clean treatment.
+   ========================================================================= */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
