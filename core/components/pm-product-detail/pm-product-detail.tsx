@@ -42,6 +42,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  ChevronDown,
   ChevronRight,
   FileText,
   House,
@@ -105,10 +106,17 @@ function splitList(raw: string | undefined): string[] {
     .filter((s) => s.length > 0);
 }
 
+// Initial number of spec rows to show before the user expands the table.
+// 8 rows cover the most-asked questions (CPU / cores / clock / cache /
+// memory / form factor / power / storage) without making the page scroll
+// past the buy box.
+const INITIAL_SPEC_ROWS = 8;
+
 export function PmProductDetail({ product }: PmProductDetailProps) {
   const { addLines, open } = usePmQuote();
   const { trackView } = usePmRecentlyViewed();
   const [qty, setQty] = useState<number>(1);
+  const [specsExpanded, setSpecsExpanded] = useState(false);
 
   const heroImageUrl = useMemo(
     () => product.galleryImages[0]?.url,
@@ -478,21 +486,54 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
               </div>
 
               {visibleSpecs.length > 0 ? (
-                <dl className="mt-5">
-                  {visibleSpecs.map((spec, i) => (
-                    <div
-                      key={`${spec.name}-${i}`}
-                      className="border-b border-pm-ink-200 py-3.5"
+                // Two-column table: label left (~40%), value right. Hairline
+                // dividers and zebra-striping (alternating contrast-50 bg)
+                // make a long spec sheet scannable without heavy chrome.
+                // Long sheets collapse to INITIAL_SPEC_ROWS until the user
+                // expands — keeps the buy box visible above the fold.
+                <>
+                  <dl className="mt-5 overflow-hidden rounded-md border border-pm-ink-200">
+                    {(specsExpanded
+                      ? visibleSpecs
+                      : visibleSpecs.slice(0, INITIAL_SPEC_ROWS)
+                    ).map((spec, i) => (
+                      <div
+                        key={`${spec.name}-${i}`}
+                        className={`grid grid-cols-[minmax(0,40%)_minmax(0,1fr)] gap-x-4 px-3.5 py-2.5 ${
+                          i % 2 === 0 ? 'bg-pm-paper' : 'bg-white'
+                        } ${i > 0 ? 'border-t border-pm-ink-200' : ''}`}
+                      >
+                        <dt className="text-[12.5px] font-medium leading-[1.45] text-pm-ink-600">
+                          {spec.name}
+                        </dt>
+                        <dd className="text-[13px] leading-[1.45] text-pm-ink-900">
+                          {spec.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {visibleSpecs.length > INITIAL_SPEC_ROWS && (
+                    <button
+                      type="button"
+                      onClick={() => setSpecsExpanded((v) => !v)}
+                      aria-expanded={specsExpanded}
+                      className="mt-3 inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1.5 text-[13px] font-semibold text-pm-navy-mid transition-colors hover:text-pm-navy-deep"
                     >
-                      <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-pm-ink-500">
-                        {spec.name}
-                      </dt>
-                      <dd className="mt-1 text-[14px] leading-[1.5] text-pm-ink-900">
-                        {spec.value}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+                      <ChevronDown
+                        size={14}
+                        strokeWidth={2.25}
+                        className={`transition-transform duration-[160ms] ${
+                          specsExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                      {specsExpanded
+                        ? 'Show fewer specs'
+                        : `Show ${visibleSpecs.length - INITIAL_SPEC_ROWS} more spec${
+                            visibleSpecs.length - INITIAL_SPEC_ROWS === 1 ? '' : 's'
+                          }`}
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="mt-5 text-[14px] leading-[1.55] text-pm-ink-500">
                   Detailed specifications for this part are not yet

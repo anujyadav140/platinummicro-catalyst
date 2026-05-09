@@ -188,7 +188,7 @@ function priceValue(p: PmInternalProduct): number | undefined {
   return p._priceValue;
 }
 
-interface PmInternalProduct extends PmProduct {
+export interface PmInternalProduct extends PmProduct {
   _priceValue?: number;
   _rating: number;
   _salePrice?: number;
@@ -202,7 +202,7 @@ interface PmInternalProduct extends PmProduct {
  * BC sandbox doesn't expose review/sale/featured data so we mock these
  * from the entityId so the same product always shows the same values.
  */
-function seedRand(seed: number): number {
+export function seedRand(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 233280;
   return x - Math.floor(x);
 }
@@ -234,41 +234,21 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
   const products = edges
     .map((edge) => edge?.node)
     .filter((node): node is NonNullable<typeof node> => node != null)
-    .map((node, index) => {
-      const id = node.entityId;
-      const r1 = seedRand(id);
-      const r2 = seedRand(id + 7);
-      const r3 = seedRand(id + 13);
-      const priceVal = node.prices?.price?.value;
-
-      // Mock rating: 2.5 .. 5.0 in 0.5 steps
-      const rating = Math.round((2.5 + r1 * 2.5) * 2) / 2;
-
-      // Mock sale: ~25% of products are on sale, sale price is 0.6..0.9 of original
-      const onSale = r2 < 0.25 && priceVal != null;
-      const salePrice = onSale && priceVal ? priceVal * (0.6 + r3 * 0.3) : undefined;
-
-      // Mock featured: ~30% of products
-      const featured = r3 < 0.3;
-
-      return {
-        id,
-        sku: node.sku ?? `bc-${id}`,
+    .map((node, index) =>
+      augmentToInternal({
+        id: node.entityId,
+        sku: node.sku,
         name: node.name,
-        href: `/dev/preview/product${node.path}`,
-        brand: node.brand?.name ?? undefined,
+        bcPath: node.path,
+        brand: node.brand?.name,
         imageUrl: node.defaultImage?.url ?? undefined,
-        imageAlt: node.defaultImage?.altText ?? node.name,
+        imageAlt: node.defaultImage?.altText ?? undefined,
+        priceValue: node.prices?.price?.value,
         priceLabel: formatPrice(node.prices?.price),
         inStock: node.inventory?.isInStock ?? false,
-        _priceValue: priceVal,
-        _rating: rating,
-        _salePrice: salePrice,
-        _featured: featured,
-        _bestSellingRank: Math.floor(r2 * 1000),
-        _newestIndex: index,
-      };
-    });
+        newestIndex: index,
+      }),
+    );
 
   return {
     products,
@@ -277,7 +257,7 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
   };
 }
 
-function applyFilters(
+export function applyFilters(
   products: PmInternalProduct[],
   filters: PmCategoryFilters,
 ): PmInternalProduct[] {
@@ -315,7 +295,7 @@ function applyFilters(
   });
 }
 
-function applySort(products: PmInternalProduct[], sort: PmCategorySort): PmInternalProduct[] {
+export function applySort(products: PmInternalProduct[], sort: PmCategorySort): PmInternalProduct[] {
   const copy = [...products];
   switch (sort) {
     case 'price-asc':
@@ -355,7 +335,7 @@ function descriptorFor(slug: string): PmCategoryDescriptor {
   return { slug, name };
 }
 
-function stripInternal(p: PmInternalProduct): PmProduct {
+export function stripInternal(p: PmInternalProduct): PmProduct {
   const {
     _priceValue: _v,
     _rating: _r,
@@ -386,7 +366,7 @@ const PRICE_SLIDER_FALLBACK_MAX = 10000;
  * scales with magnitude so big-ticket categories don't snap to absurdly
  * coarse buckets.
  */
-function roundUpSliderMax(maxPrice: number): number {
+export function roundUpSliderMax(maxPrice: number): number {
   if (!Number.isFinite(maxPrice) || maxPrice <= 0) {
     return PRICE_SLIDER_FALLBACK_MAX;
   }
@@ -394,33 +374,73 @@ function roundUpSliderMax(maxPrice: number): number {
   return Math.ceil(maxPrice / step) * step;
 }
 
-export async function fetchPmCategoryListing(
-  slug: string,
+/**
+ * Shared "augment raw BC product into PmInternalProduct" helper. Both the
+ * category fetcher and the search fetcher use this so the mock fields
+ * (rating, sale, featured, sellingFast) stay consistent across pages — a
+ * product looks the same on a category grid and on a search results page.
+ */
+export function augmentToInternal(input: {
+  id: number;
+  sku?: string | null;
+  name: string;
+  /** BC's `path` like "/cyberforge-alpha/" */
+  bcPath: string;
+  brand?: string | null;
+  imageUrl?: string;
+  imageAlt?: string;
+  priceValue?: number | null;
+  priceLabel?: string;
+  inStock: boolean;
+  newestIndex: number;
+}): PmInternalProduct {
+  const id = input.id;
+  const r1 = seedRand(id);
+  const r2 = seedRand(id + 7);
+  const r3 = seedRand(id + 13);
+  const priceVal = input.priceValue ?? undefined;
+
+  const rating = Math.round((2.5 + r1 * 2.5) * 2) / 2;
+  const onSale = r2 < 0.25 && priceVal != null;
+  const salePrice = onSale && priceVal ? priceVal * (0.6 + r3 * 0.3) : undefined;
+  const featured = r3 < 0.3;
+
+  return {
+    id,
+    sku: input.sku ?? `bc-${id}`,
+    name: input.name,
+    href: `/dev/preview/product${input.bcPath}`,
+    brand: input.brand ?? undefined,
+    imageUrl: input.imageUrl,
+    imageAlt: input.imageAlt ?? input.name,
+    priceLabel: input.priceLabel,
+    inStock: input.inStock,
+    sellingFast: Math.floor(r2 * 1000) < 200,
+    _priceValue: priceVal,
+    _rating: rating,
+    _salePrice: salePrice,
+    _featured: featured,
+    _bestSellingRank: Math.floor(r2 * 1000),
+    _newestIndex: input.newestIndex,
+  };
+}
+
+/**
+ * Apply filters + sort + pagination to a raw set of augmented products.
+ * Returns the listing shape (minus the category descriptor — caller fills
+ * that in). Reused by the category page and the search results page so
+ * facets/sort behavior is identical.
+ */
+export function buildPmListing(
+  raw: PmInternalProduct[],
   query: PmCategoryQuery = {},
-): Promise<PmCategoryListing> {
+): Omit<PmCategoryListing, 'category'> {
   const requestedSize = query.pageSize ?? PM_CATEGORY_DEFAULT_PAGE_SIZE;
   const pageSize = (PM_CATEGORY_PAGE_SIZES as readonly number[]).includes(requestedSize)
     ? requestedSize
     : PM_CATEGORY_DEFAULT_PAGE_SIZE;
   const currentPage = Math.max(1, query.page ?? 1);
   const sort = query.sort ?? 'featured';
-
-  let raw: PmInternalProduct[] = [];
-  let bcCategoryName: string | undefined;
-  let bcCategoryDescription: string | undefined;
-  try {
-    const result = await fetchPmCategoryRawProducts(slug);
-    raw = result.products;
-    bcCategoryName = result.bcCategoryName;
-    bcCategoryDescription = result.bcCategoryDescription;
-  } catch (err) {
-    // Don't throw — the category page should always render the chrome even
-    // when BC is down or the slug doesn't resolve. Log so 4xx/5xx isn't
-    // hidden during dev.
-    // eslint-disable-next-line no-console
-    console.error('[pm-category-by-slug] fetch failed:', err);
-    raw = [];
-  }
 
   const observedMaxPrice = raw.reduce((max, p) => {
     const v = p._priceValue;
@@ -439,20 +459,45 @@ export async function fetchPmCategoryListing(
     onSale: query.onSale,
     featured: query.featured,
   });
-
   const sorted = applySort(filtered, sort);
-
   const totalAfterFilters = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalAfterFilters / pageSize));
   const safePage = Math.min(currentPage, totalPages);
-
   const start = (safePage - 1) * pageSize;
   const pageSlice = sorted.slice(start, start + pageSize);
 
-  // Prefer the curated descriptor (canonical sentence-case label, longer
-  // marketing description). Fall back to BC's live name/description when we
-  // don't have a curated entry — this keeps non-canonical categories like
-  // brand pages or seasonal landing pages from showing a slug-cased title.
+  return {
+    allProducts: raw.map(stripInternal),
+    pageProducts: pageSlice.map(stripInternal),
+    totalAfterFilters,
+    totalPages,
+    currentPage: safePage,
+    pageSize,
+    priceSliderMax,
+  };
+}
+
+export async function fetchPmCategoryListing(
+  slug: string,
+  query: PmCategoryQuery = {},
+): Promise<PmCategoryListing> {
+  let raw: PmInternalProduct[] = [];
+  let bcCategoryName: string | undefined;
+  let bcCategoryDescription: string | undefined;
+  try {
+    const result = await fetchPmCategoryRawProducts(slug);
+    raw = result.products;
+    bcCategoryName = result.bcCategoryName;
+    bcCategoryDescription = result.bcCategoryDescription;
+  } catch (err) {
+    // Don't throw — the category page should always render the chrome even
+    // when BC is down or the slug doesn't resolve. Log so 4xx/5xx isn't
+    // hidden during dev.
+    // eslint-disable-next-line no-console
+    console.error('[pm-category-by-slug] fetch failed:', err);
+    raw = [];
+  }
+
   const baseDescriptor = descriptorFor(slug);
   const category: PmCategoryDescriptor = {
     ...baseDescriptor,
@@ -465,13 +510,7 @@ export async function fetchPmCategoryListing(
 
   return {
     category,
-    allProducts: raw.map(stripInternal),
-    pageProducts: pageSlice.map(stripInternal),
-    totalAfterFilters,
-    totalPages,
-    currentPage: safePage,
-    pageSize,
-    priceSliderMax,
+    ...buildPmListing(raw, query),
   };
 }
 

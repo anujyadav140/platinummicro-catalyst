@@ -1,12 +1,15 @@
+'use client';
+
 /**
  * PmCategoryStrip
  * ---------------
- * "Browse by category" — six category tiles on a sunken (ink-100) background.
+ * "Browse by category" — category tiles on a sunken (ink-100) background.
  *
- * Tiles are derived from `PM_CATEGORIES` in `~/lib/pm-categories` so the
- * homepage, the nav rail, the footer, and the mega menu all stay in sync.
- * Categories flagged `hideFromCategoryStrip` (e.g. the "Bulk pricing" alias)
- * are filtered out automatically.
+ * Tiles are derived from BC's live top-level categories via PmNavContext
+ * (the same source as the navy nav rail + mega menu + footer) so all four
+ * surfaces stay in sync without any hardcoded category list. Categories
+ * flagged `hideFromCategoryStrip` or missing icon/count metadata are
+ * filtered out so we don't render half-styled tiles.
  *
  * For one-off pages that want to render a different list (e.g. a campaign
  * landing), pass an explicit `tiles` prop.
@@ -24,6 +27,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { PmSectionHeader } from '~/components/pm-section-header';
 import { PM_CATEGORIES, type PmCategory } from '~/lib/pm-categories';
+import { usePmCategories } from '~/lib/pm-mega-menu-context';
 
 const ICONS: Record<NonNullable<PmCategory['icon']>, LucideIcon> = {
   Server,
@@ -47,23 +51,21 @@ export interface PmCategoryTile {
 }
 
 /**
- * Derive the homepage tiles from PM_CATEGORIES. Filters out:
- *   - entries flagged `hideFromCategoryStrip`
- *   - entries missing `icon` / `count` (incomplete metadata = don't tile it)
+ * Build tiles from a category list, filtering out entries flagged
+ * `hideFromCategoryStrip` or missing the editorial icon/count metadata
+ * (a tile without a glyph or a count looks broken).
  */
-function tilesFromCategories(): PmCategoryTile[] {
-  return PM_CATEGORIES.filter(
-    (c) => !c.hideFromCategoryStrip && c.icon && c.count,
-  ).map((c) => ({
-    key: c.key,
-    label: c.tileLabel ?? c.label,
-    count: c.count!,
-    href: c.href,
-    icon: c.icon!,
-  }));
+function tilesFromCategories(categories: PmCategory[]): PmCategoryTile[] {
+  return categories
+    .filter((c) => !c.hideFromCategoryStrip && c.icon && c.count)
+    .map((c) => ({
+      key: c.key,
+      label: c.tileLabel ?? c.label,
+      count: c.count!,
+      href: c.href,
+      icon: c.icon!,
+    }));
 }
-
-const DEFAULT_TILES: PmCategoryTile[] = tilesFromCategories();
 
 export interface PmCategoryStripProps {
   eyebrow?: string;
@@ -74,8 +76,12 @@ export interface PmCategoryStripProps {
 export function PmCategoryStrip({
   eyebrow = 'Catalog',
   title = 'Browse by category',
-  tiles = DEFAULT_TILES,
+  tiles: tilesProp,
 }: PmCategoryStripProps) {
+  const fromContext = usePmCategories();
+  const tiles =
+    tilesProp ??
+    tilesFromCategories(fromContext.length > 0 ? fromContext : PM_CATEGORIES);
   return (
     <section className="bg-pm-ink-100 py-20">
       <div className="mx-auto max-w-pm-container px-8">

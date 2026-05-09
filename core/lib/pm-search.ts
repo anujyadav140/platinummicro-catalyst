@@ -1,0 +1,280 @@
+/**
+ * pm-search
+ * ---------
+ * Server-side typeahead fetcher for the header search bar. Hits BC's
+ * `searchProducts` GraphQL with a `searchTerm` filter, returns up to N
+ * lightweight hits shaped for the typeahead panel.
+ *
+ * Kept independent from `pm-products` / `pm-category-by-slug` because:
+ *   - It needs `RELEVANCE` sort (not newest / featured)
+ *   - It only fetches the small subset of fields the typeahead row renders
+ *     (image, name, brand, sku, price) so the round trip stays fast
+ *   - It exposes a `totalCount` so the panel can render
+ *     "View all 49 results for {q}"
+ */
+
+import { unstable_cache } from 'next/cache';
+import { client } from '~/client';
+import { graphql } from '~/client/graphql';
+import type { PmProduct } from '~/lib/pm-products';
+import {
+  augmentToInternal,
+  buildPmListing,
+  type PmCategoryListing,
+  type PmCategoryQuery,
+  type PmInternalProduct,
+} from '~/lib/pm-category-by-slug';
+
+export interface PmSearchHit {
+  id: number;
+  sku: string;
+  name: string;
+  /** dev/preview-namespaced product URL */
+  href: string;
+  brand?: string;
+  imageUrl?: string;
+  imageAlt: string;
+  priceLabel?: string;
+  inStock: boolean;
+}
+
+export interface PmSearchResult {
+  hits: PmSearchHit[];
+  /** Total products matching `query` server-side, regardless of `limit` */
+  totalCount: number;
+  /** Echo of the trimmed query so the client can avoid stale-result flashes */
+  query: string;
+}
+
+const PmSearchQuery = graphql(`
+  query PmSearchQuery($searchTerm: String!, $limit: Int!) {
+    site {
+      search {
+        searchProducts(filters: { searchTerm: $searchTerm }, sort: RELEVANCE) {
+          products(first: $limit) {
+            collectionInfo {
+              totalItems
+            }
+            edges {
+              node {
+                entityId
+                sku
+                name
+                path
+                brand {
+                  name
+                }
+                defaultImage {
+                  altText
+                  url(width: 96, height: 96)
+                }
+                inventory {
+                  isInStock
+                }
+                prices {
+                  price {
+                    value
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+function formatPrice(price?: { value: number; currencyCode: string } | null): string | undefined {
+  if (!price) return undefined;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: price.currencyCode,
+    maximumFractionDigits: 0,
+  }).format(price.value);
+}
+
+// Memoized BC fetch — same (query,limit) pair within the cache window returns
+// instantly. Critical for typeahead responsiveness in dev where Next's
+// fetch-level `revalidate` doesn't always survive HMR.
+const cachedSearchFetch = unstable_cache(
+  async (searchTerm: string, limit: number): Promise<PmSearchResult> => {
+    const { data } = await client.fetch({
+      document: PmSearchQuery,
+      variables: { searchTerm, limit },
+      fetchOptions: { next: { revalidate: 120 } },
+    });
+
+    const products = data?.site?.search?.searchProducts?.products;
+    const totalCount = products?.collectionInfo?.totalItems ?? 0;
+    const edges = products?.edges ?? [];
+
+    const hits: PmSearchHit[] = edges
+      .map((edge) => edge?.node)
+      .filter((n): n is NonNullable<typeof n> => n != null)
+      .map((n) => ({
+        id: n.entityId,
+        sku: n.sku ?? `bc-${n.entityId}`,
+        name: n.name,
+        href: `/dev/preview/product${n.path}`,
+        brand: n.brand?.name ?? undefined,
+        imageUrl: n.defaultImage?.url ?? undefined,
+        imageAlt: n.defaultImage?.altText ?? n.name,
+        priceLabel: formatPrice(n.prices?.price),
+        inStock: n.inventory?.isInStock ?? false,
+      }));
+
+    return { hits, totalCount, query: searchTerm };
+  },
+  ['pm-search-typeahead'],
+  { revalidate: 120, tags: ['pm-search'] },
+);
+
+export async function searchPmProducts(
+  rawQuery: string,
+  limit = 8,
+): Promise<PmSearchResult> {
+  const query = rawQuery.trim();
+  if (query.length < 2) {
+    return { hits: [], totalCount: 0, query };
+  }
+
+  const safeLimit = Math.max(1, Math.min(limit, 50));
+  return cachedSearchFetch(query, safeLimit);
+}
+
+// ---------------------------------------------------------------------------
+// Full search results page
+// ---------------------------------------------------------------------------
+
+const PmSearchListingQuery = graphql(`
+  query PmSearchListingQuery($searchTerm: String!, $limit: Int!) {
+    site {
+      search {
+        searchProducts(filters: { searchTerm: $searchTerm }, sort: RELEVANCE) {
+          products(first: $limit) {
+            collectionInfo {
+              totalItems
+            }
+            edges {
+              node {
+                entityId
+                sku
+                name
+                path
+                brand {
+                  name
+                }
+                defaultImage {
+                  altText
+                  url(width: 320, height: 320)
+                }
+                inventory {
+                  isInStock
+                }
+                prices {
+                  price {
+                    value
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+// We fetch the raw augmented pool (up to 50 hits) once per (query) — the
+// page applies filters/sort/pagination on top via `buildPmListing`. Caching
+// at the raw layer (not the per-filter layer) means changing a filter
+// doesn't trigger another BC roundtrip.
+interface PmSearchRawResult {
+  rawProducts: PmInternalProduct[];
+  totalCount: number;
+  query: string;
+}
+
+const cachedSearchListingRaw = unstable_cache(
+  async (searchTerm: string, limit: number): Promise<PmSearchRawResult> => {
+    const { data } = await client.fetch({
+      document: PmSearchListingQuery,
+      variables: { searchTerm, limit },
+      fetchOptions: { next: { revalidate: 120 } },
+    });
+
+    const searchProducts = data?.site?.search?.searchProducts?.products;
+    const totalCount = searchProducts?.collectionInfo?.totalItems ?? 0;
+    const edges = searchProducts?.edges ?? [];
+
+    const rawProducts: PmInternalProduct[] = edges
+      .map((edge) => edge?.node)
+      .filter((n): n is NonNullable<typeof n> => n != null)
+      .map((n, index) =>
+        augmentToInternal({
+          id: n.entityId,
+          sku: n.sku,
+          name: n.name,
+          bcPath: n.path,
+          brand: n.brand?.name,
+          imageUrl: n.defaultImage?.url ?? undefined,
+          imageAlt: n.defaultImage?.altText ?? undefined,
+          priceValue: n.prices?.price?.value,
+          priceLabel: formatPrice(n.prices?.price),
+          inStock: n.inventory?.isInStock ?? false,
+          newestIndex: index,
+        }),
+      );
+
+    return { rawProducts, totalCount, query: searchTerm };
+  },
+  ['pm-search-listing-raw'],
+  { revalidate: 120, tags: ['pm-search'] },
+);
+
+export interface PmSearchListing extends PmCategoryListing {
+  /** The trimmed query string the listing was built for. */
+  query: string;
+  /** Total products matched by BC server-side (pre-filter), for the heading. */
+  totalMatched: number;
+}
+
+/**
+ * Full search results listing — same `PmCategoryListing` shape as the
+ * category page so we can reuse the `<PmCategoryListing>` component
+ * (facet sidebar, sort dropdown, view toggle, pagination, etc).
+ */
+export async function fetchPmSearchListing(
+  rawQuery: string,
+  query: PmCategoryQuery = {},
+): Promise<PmSearchListing> {
+  const trimmed = rawQuery.trim();
+  if (trimmed.length < 2) {
+    return {
+      query: trimmed,
+      totalMatched: 0,
+      category: { slug: 'search', name: trimmed || 'Search' },
+      allProducts: [],
+      pageProducts: [],
+      totalAfterFilters: 0,
+      totalPages: 1,
+      currentPage: 1,
+      pageSize: 24,
+      priceSliderMax: 10000,
+    };
+  }
+
+  const { rawProducts, totalCount } = await cachedSearchListingRaw(trimmed, 50);
+
+  const listing = buildPmListing(rawProducts, query);
+
+  return {
+    query: trimmed,
+    totalMatched: totalCount,
+    category: { slug: 'search', name: `Results for "${trimmed}"` },
+    ...listing,
+  };
+}

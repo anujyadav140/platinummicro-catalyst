@@ -10,19 +10,24 @@
  * Quick order, Sign in, phone number, separated by middots, then a small X
  * to dismiss.
  *
- * Dismissal persists in localStorage under `pm-top-bar-dismissed` so the bar
- * stays gone on subsequent page loads. To re-show during dev, run
- * `localStorage.removeItem('pm-top-bar-dismissed')` in the console.
+ * Dismissal persists in a cookie (`pm-top-bar-dismissed=1`) read on the
+ * server during SSR so the bar's initial visibility matches the final
+ * client state — no flash, no hydration mismatch. To re-show during dev,
+ * delete the cookie in DevTools (Application → Cookies → /dev/preview).
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { usePmSession } from '~/lib/pm-session';
+import {
+  usePmTopBarDismissed,
+  usePmTrustBarHtml,
+} from '~/lib/pm-mega-menu-context';
+import { writePmTopBarDismissedCookie } from '~/lib/pm-top-bar-cookie';
 import type { PmTopBarProps } from './pm-top-bar.types';
 
 const DEFAULT_PHONE = '(877)-PMG4YOU';
 const DEFAULT_FREE_SHIP = 5000;
-const DISMISS_KEY = 'pm-top-bar-dismissed';
 
 export function PmTopBar({
   phone = DEFAULT_PHONE,
@@ -35,32 +40,24 @@ export function PmTopBar({
   // server shell. When signed in we swap "Sign in" → "Hi, {firstName}".
   const { customer } = usePmSession();
 
-  // Render nothing until we've checked localStorage so we don't flash the bar
-  // and then immediately hide it on the client. Default to `false` (showing)
-  // for users who never dismissed.
-  const [dismissed, setDismissed] = useState<boolean | null>(null);
+  // Initial value comes from the cookie via PmNavProvider, which the layout
+  // populated server-side. So SSR + first client render agree — no flash,
+  // no hydration warning. After dismiss, local state drives the rest of
+  // this session and the cookie persists across reloads.
+  const initialDismissed = usePmTopBarDismissed();
+  const [dismissed, setDismissed] = useState(initialDismissed);
 
-  useEffect(() => {
-    try {
-      setDismissed(window.localStorage.getItem(DISMISS_KEY) === '1');
-    } catch {
-      // SSR or storage unavailable — show the bar.
-      setDismissed(false);
-    }
-  }, []);
+  // BC-driven trust line: any banner whose name starts with "Trust"
+  // overrides the hardcoded copy below. Falls back to the static text
+  // when no such banner is active so the bar never looks empty.
+  const trustBarHtml = usePmTrustBarHtml();
 
   const handleDismiss = () => {
     setDismissed(true);
-    try {
-      window.localStorage.setItem(DISMISS_KEY, '1');
-    } catch {
-      // Storage failure is non-fatal — bar still hides for this page load.
-    }
+    writePmTopBarDismissedCookie(true);
   };
 
-  // First paint before the effect runs: render the bar (avoids layout shift
-  // for first-time visitors). After the effect: hide if dismissed.
-  if (dismissed === true) return null;
+  if (dismissed) return null;
 
   return (
     <div
@@ -70,14 +67,21 @@ export function PmTopBar({
       {/* Inner container reserves space on the right so the absolute-positioned
           X button never overlaps the phone number. */}
       <div className="mx-auto flex h-full max-w-pm-container items-center justify-between gap-6 px-8 pr-16">
-        <span className="hidden md:inline">
-          <strong className="font-semibold text-white">MBE-certified</strong>{' '}
-          · Authorized HPE &amp; Intel partner
-          <span className="px-2 text-white/40">·</span>
-          Free freight on orders over ${freeShipMinimum.toLocaleString()}
-          <span className="px-2 text-white/40">·</span>
-          Ships from Southern California
-        </span>
+        {trustBarHtml ? (
+          <span
+            className="hidden md:inline pm-trust-bar-html"
+            dangerouslySetInnerHTML={{ __html: trustBarHtml }}
+          />
+        ) : (
+          <span className="hidden md:inline">
+            <strong className="font-semibold text-white">MBE-certified</strong>{' '}
+            · Authorized HPE &amp; Intel partner
+            <span className="px-2 text-white/40">·</span>
+            Free freight on orders over ${freeShipMinimum.toLocaleString()}
+            <span className="px-2 text-white/40">·</span>
+            Ships from Southern California
+          </span>
+        )}
 
         <span className="flex items-center gap-3">
           <button

@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react';
 import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { PmCouponInput } from '~/components/pm-coupon-input';
 import { usePmQuote } from '~/lib/pm-quote-store';
 
 const SCRIM_DURATION_MS = 200;
@@ -158,6 +159,12 @@ export function PmQuoteDrawer() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {lines.length > 0 && (
+            <div className="mt-4">
+              <PmCouponInput />
+            </div>
           )}
         </div>
 

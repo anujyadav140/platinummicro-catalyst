@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
+import { usePmCategories } from '~/lib/pm-mega-menu-context';
 import { PmRangeSlider } from '~/components/pm-range-slider';
 
 // Slider lower bound is fixed; upper bound now comes from the live data
@@ -220,8 +221,15 @@ export function PmFacetSidebar({
     return qs ? `?${qs}` : '?';
   })();
 
-  // Top-level categories from PM_CATEGORIES, excluding "bulk" (a route, not a category)
-  const categoryOptions = PM_CATEGORIES.filter((c) => c.key !== 'bulk');
+  // BC-driven top-level categories (via PmNavContext). Falls back to the
+  // static list when no provider is up. The `bulk` filter was for an
+  // editorial alias that won't exist in BC, but keep it defensively in
+  // case the static fallback kicks in.
+  const fromContext = usePmCategories();
+  const categoryOptions = (fromContext.length > 0
+    ? fromContext
+    : PM_CATEGORIES
+  ).filter((c) => c.key !== 'bulk');
 
   return (
     <aside className="lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:self-start">

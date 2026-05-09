@@ -1,0 +1,141 @@
+'use client';
+
+/**
+ * PmCouponInput
+ * -------------
+ * Promo-code row for the quote drawer. Customer types a code, hits Apply,
+ * we POST to `/dev/preview/api/coupons/validate` and show:
+ *   - green check + summary on a valid coupon (with a Remove link to clear)
+ *   - red X + reason on an invalid one
+ *   - spinner while checking
+ *
+ * State is local to this component for v1 — there is no real BC cart yet,
+ * so applied coupons aren't persisted into the quote store. When a real
+ * cart lands, lift this into `PmQuoteContext`.
+ */
+
+import { useRef, useState, type FormEvent } from 'react';
+import { Check, Loader2, X } from 'lucide-react';
+import type { PmCouponValidation } from '~/lib/pm-coupons';
+
+type Status = 'idle' | 'loading' | 'valid' | 'invalid';
+
+export function PmCouponInput() {
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState<Status>('idle');
+  const [result, setResult] = useState<PmCouponValidation | null>(null);
+
+  // Stale-request guard: cancel any in-flight check before kicking off a new one.
+  const abortRef = useRef<AbortController | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (status === 'loading') return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setStatus('loading');
+    setResult(null);
+
+    try {
+      const res = await fetch('/dev/preview/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+        signal: controller.signal,
+      });
+      const data = (await res.json()) as PmCouponValidation;
+
+      if (controller.signal.aborted) return;
+
+      setResult(data);
+      setStatus(data.valid ? 'valid' : 'invalid');
+    } catch (err) {
+      if ((err as { name?: string })?.name === 'AbortError') return;
+      setResult({
+        valid: false,
+        code: code.trim().toUpperCase(),
+        reason: 'Could not check this code right now',
+      });
+      setStatus('invalid');
+    }
+  }
+
+  function handleRemove() {
+    abortRef.current?.abort();
+    setCode('');
+    setResult(null);
+    setStatus('idle');
+  }
+
+  const isLoading = status === 'loading';
+  const isValid = status === 'valid' && result?.valid;
+
+  return (
+    <div className="rounded-md border border-pm-ink-200 bg-pm-paper p-4">
+      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-pm-tan">
+        Promo code
+      </div>
+
+      {isValid ? (
+        <div className="mt-2 flex items-center justify-between gap-2 text-[13px]">
+          <div className="flex min-w-0 items-center gap-1.5 text-pm-success">
+            <Check size={14} strokeWidth={2} className="shrink-0" />
+            <span className="font-semibold">{result?.code}</span>
+            <span className="truncate text-pm-ink-700">— {result?.summary}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="shrink-0 text-[12px] font-medium text-pm-ink-500 underline-offset-2 hover:text-pm-ink-900 hover:underline"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-2 flex items-center gap-2">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              if (status === 'invalid') {
+                setStatus('idle');
+                setResult(null);
+              }
+            }}
+            placeholder="Coupon code"
+            maxLength={32}
+            spellCheck={false}
+            autoComplete="off"
+            aria-label="Coupon code"
+            className="min-w-0 flex-1 rounded-md border border-pm-ink-200 bg-white px-3 py-2 font-mono text-[13px] uppercase text-pm-ink-900 outline-none placeholder:font-sans placeholder:normal-case placeholder:text-pm-ink-400 focus:border-pm-navy-deep"
+          />
+          <button
+            type="submit"
+            disabled={isLoading || code.trim().length === 0}
+            className="inline-flex items-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+                Checking…
+              </>
+            ) : (
+              'Apply'
+            )}
+          </button>
+        </form>
+      )}
+
+      {status === 'invalid' && result?.reason && (
+        <div className="mt-2 flex items-center gap-1.5 text-[12px] text-pm-danger">
+          <X size={13} strokeWidth={2} className="shrink-0" />
+          <span>{result.reason}</span>
+        </div>
+      )}
+    </div>
+  );
+}

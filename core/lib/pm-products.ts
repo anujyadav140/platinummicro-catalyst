@@ -33,6 +33,8 @@ export interface PmProduct {
   priceLabel?: string;
   /** Whether the product is in stock right now */
   inStock: boolean;
+  /** True when inventory is at or below warning level, or product is a top seller */
+  sellingFast?: boolean;
 }
 
 const PmFeaturedProductsQuery = graphql(`

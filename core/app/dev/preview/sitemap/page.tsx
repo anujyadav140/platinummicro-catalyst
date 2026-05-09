@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { PmLegalLayout } from '~/components/pm-legal-layout';
-import { PM_CATEGORIES } from '~/lib/pm-categories';
+import { fetchPmCategories } from '~/lib/pm-categories-fetcher';
 
 export const metadata = {
   title: 'Site Map — Platinum Micro',
@@ -27,18 +27,19 @@ interface SiteMapSection {
   links: SiteMapLink[];
 }
 
-const SECTIONS: SiteMapSection[] = [
-  {
-    title: 'Catalog',
-    blurb: 'Browse the product catalog by category.',
-    links: [
-      { label: 'Home', href: '/dev/preview' },
-      ...PM_CATEGORIES.map((c) => ({
-        label: c.label,
-        href: c.href,
-      })),
-    ],
-  },
+// Editorial aliases can still slip in (e.g. via the static fallback), so
+// dedupe by href to avoid two visually-different links pointing at the
+// same URL — also keeps React keys unique downstream.
+function dedupeByHref(links: SiteMapLink[]): SiteMapLink[] {
+  const seen = new Set<string>();
+  return links.filter((l) => {
+    if (seen.has(l.href)) return false;
+    seen.add(l.href);
+    return true;
+  });
+}
+
+const STATIC_SECTIONS: SiteMapSection[] = [
   {
     title: 'About',
     blurb: 'Company background, partner brands, and policies.',
@@ -85,12 +86,25 @@ const SECTIONS: SiteMapSection[] = [
   },
 ];
 
-export default function SiteMapPage() {
+export default async function SiteMapPage() {
+  const categories = await fetchPmCategories();
+  const sections: SiteMapSection[] = [
+    {
+      title: 'Catalog',
+      blurb: 'Browse the product catalog by category.',
+      links: dedupeByHref([
+        { label: 'Home', href: '/dev/preview' },
+        ...categories.map((c) => ({ label: c.label, href: c.href })),
+      ]),
+    },
+    ...STATIC_SECTIONS,
+  ];
+
   return (
     <PmLegalLayout
       eyebrow="Site map"
       title="Browse the Site."
-      meta={`${SECTIONS.reduce((n, s) => n + s.links.length, 0)} pages across ${SECTIONS.length} sections`}
+      meta={`${sections.reduce((n, s) => n + s.links.length, 0)} pages across ${sections.length} sections`}
     >
       <p>
         Every working route on platinummicro.com, grouped by section. If
@@ -99,7 +113,7 @@ export default function SiteMapPage() {
         lists direct phone and email for sales, support, and billing.
       </p>
 
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <section key={section.title}>
           <h2>{section.title}</h2>
           {section.blurb && <p>{section.blurb}</p>}

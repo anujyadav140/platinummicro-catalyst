@@ -40,10 +40,45 @@ export interface PmMegaPromo {
   ctaHref: string;
 }
 
+/**
+ * Card representation of a subcategory in the mega-menu — title, blurb,
+ * image. Replaces the older "bullet list of links" layout when BC provides
+ * rich category data (description + defaultImage).
+ */
+export interface PmMegaCard {
+  /** Short uppercase code badge (e.g., "RAC", "GPU"). Auto-derived from
+   *  the category name — first 3 chars of the first word, padded with
+   *  initials of subsequent words when the first word is short. */
+  badge: string;
+  /** Card title — the subcategory's display name. */
+  title: string;
+  /** One-line description, HTML-stripped + truncated. May be empty. */
+  blurb: string;
+  /** Category page URL. */
+  href: string;
+  /** Optional category image from BC (admin → Categories → Edit → Image). */
+  imageUrl?: string;
+  /** Alt text for the image. */
+  imageAlt?: string;
+}
+
+/** Right-rail brand cell — small clickable logo card. */
+export interface PmMegaBrand {
+  name: string;
+  href: string;
+  logoUrl?: string;
+}
+
 export interface PmMegaMenu {
-  /** 4 columns of curated links */
+  /** Legacy bullet-list columns. Still used as fallback when BC data is
+   *  too thin to render the card grid. */
   cols: PmMegaColumn[];
-  /** Right-rail promo card (HPE Copilot, vendor of the month, etc.) */
+  /** Card grid — preferred layout when BC has subcategories with images
+   *  and descriptions. Empty/undefined → header falls back to `cols`. */
+  cards?: PmMegaCard[];
+  /** Right-rail brand cells (BC-driven). Hidden when empty. */
+  brands?: PmMegaBrand[];
+  /** Editorial promo card (HPE Copilot, vendor of the month, etc.) */
   promo?: PmMegaPromo;
 }
 

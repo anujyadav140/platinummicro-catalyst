@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * PmFooter
  * --------
@@ -6,31 +8,26 @@
  *   col 2-5 — link sections
  * Bottom: legal row with copyright + legal links.
  *
- * The Catalog column is derived from `PM_CATEGORIES` so it stays in sync
- * with the nav rail and the homepage CategoryStrip — see pm-categories.ts.
- * Categories flagged `hideFromFooter` are filtered out (e.g. the
- * "Bulk pricing" alias).
+ * Client component so it can read the BC-fetched category list from
+ * `PmNavContext` (the same provider the header uses). The shells that
+ * mount this component are themselves client; making the footer client
+ * keeps the composition simple. Categories flagged `hideFromFooter` are
+ * filtered out via the editorial overlay.
+ *
+ * Falls back to PM_CATEGORIES static when no provider is up (e.g. story-
+ * book or a route mounted outside the dev/preview layout).
  */
 
 import Link from 'next/link';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
+import { usePmCategories } from '~/lib/pm-mega-menu-context';
 
 interface PmFooterColumn {
   title: string;
   links: { label: string; href: string }[];
 }
 
-// Catalog column links are derived from PM_CATEGORIES — single source of
-// truth shared with the nav rail and homepage CategoryStrip.
-const CATALOG_LINKS = PM_CATEGORIES.filter((c) => !c.hideFromFooter).map(
-  (c) => ({ label: c.label, href: c.href }),
-);
-
-const DEFAULT_COLUMNS: PmFooterColumn[] = [
-  {
-    title: 'Catalog',
-    links: CATALOG_LINKS,
-  },
+const STATIC_COLUMNS: PmFooterColumn[] = [
   {
     title: 'Programs',
     links: [
@@ -62,24 +59,41 @@ export interface PmFooterProps {
 }
 
 export function PmFooter({
-  columns = DEFAULT_COLUMNS,
+  columns,
   tagline = 'Two decades stocking servers, storage, and networking for system integrators, public sector, and healthcare buyers worldwide.',
   copyright = `© ${new Date().getFullYear()} Platinum Micro, Inc. — Southern California`,
 }: PmFooterProps) {
+  const fromContext = usePmCategories();
+  // Source-of-truth precedence: explicit `columns` prop > BC via context >
+  // static PM_CATEGORIES fallback.
+  const catalogSource =
+    fromContext.length > 0 ? fromContext : PM_CATEGORIES;
+  const resolvedColumns: PmFooterColumn[] =
+    columns ??
+    [
+      {
+        title: 'Catalog',
+        links: catalogSource
+          .filter((c) => !c.hideFromFooter)
+          .map((c) => ({ label: c.label, href: c.href })),
+      },
+      ...STATIC_COLUMNS,
+    ];
+
   return (
     <footer className="bg-pm-navy-deepest pb-8 pt-16 text-white/70">
       <div className="mx-auto max-w-pm-container px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.2fr]">
           {/* Brand block */}
           <div>
-            <span className="mb-3.5 inline-block rounded-md bg-white px-2.5 py-1.5">
+            <span className="mb-3.5 inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/pm/logo.png"
                 alt="Platinum Micro"
-                width="100"
-                height="32"
-                className="block h-8 w-auto"
+                width="225"
+                height="72"
+                className="block h-[72px] w-auto"
               />
             </span>
             <p className="max-w-[280px] text-[13px] leading-[1.55] text-white/60">
@@ -88,7 +102,7 @@ export function PmFooter({
           </div>
 
           {/* Link columns */}
-          {columns.map((col) => (
+          {resolvedColumns.map((col) => (
             <div key={col.title}>
               <h6 className="mb-3.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">
                 {col.title}

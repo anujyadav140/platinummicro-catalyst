@@ -192,6 +192,46 @@ function leafSlugFromPath(path: string | null | undefined): string | undefined {
 }
 
 /**
+ * Repair UTF-8 bytes that were mistakenly decoded as Latin-1 ("mojibake").
+ * BC's customField data sometimes round-trips through a Latin-1 layer in
+ * the merchant's source-of-truth, so symbols like `®` arrive as `Â®`. We
+ * detect the telltale `Â` marker and re-decode the string's char codes as
+ * UTF-8 bytes; if the input wasn't actually mojibake'd this is a no-op.
+ */
+function fixMojibake(s: string): string {
+  if (!s || !/Â/.test(s)) return s;
+  try {
+    const bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i) & 0xff;
+    // `fatal: true` so genuinely binary input throws and we fall back to
+    // the raw value rather than emitting � replacement chars.
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return s;
+  }
+}
+
+/**
+ * Some BC stores stuff a whole spec sheet into a single customField value
+ * as `"key1=val1";"key2=val2";…`. When we detect at least two such quoted
+ * "key=value" pairs we explode the blob into individual specs so the PDP
+ * spec table can render each row separately. Returns null when the value
+ * doesn't match — caller falls back to the raw single-row spec.
+ */
+function parseStructuredSpecBlob(value: string): PmProductSpec[] | null {
+  if (!value) return null;
+  const re = /"([^"=]+)=([^"]*)"/g;
+  const segments: PmProductSpec[] = [];
+  for (const match of value.matchAll(re)) {
+    segments.push({
+      name: fixMojibake(match[1].trim()),
+      value: fixMojibake(match[2].trim()),
+    });
+  }
+  return segments.length >= 2 ? segments : null;
+}
+
+/**
  * Normalize an all-caps BC category name to title case for display
  * ("SERVERS" → "Servers"). Leaves mixed-case names alone so genuine product
  * naming like "Cisco Catalyst 9000" or model numbers like "DL360" survive
@@ -260,7 +300,14 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
   const specs: PmProductSpec[] = (node.customFields?.edges ?? [])
     .map((edge) => edge?.node)
     .filter((n): n is NonNullable<typeof n> => n != null)
-    .map((n) => ({ name: n.name, value: n.value }));
+    .flatMap((n) => {
+      // If the merchant packed multiple specs into a single field as
+      // `"k1=v1";"k2=v2";…`, expand it into individual rows. Otherwise
+      // keep the field as-is.
+      const blob = parseStructuredSpecBlob(n.value);
+      if (blob) return blob;
+      return [{ name: fixMojibake(n.name), value: fixMojibake(n.value) }];
+    });
 
   // Pick the most user-meaningful category chain for the breadcrumb.
   //

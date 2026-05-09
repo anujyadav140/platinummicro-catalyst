@@ -66,12 +66,17 @@ export function PmProductCard({ product }: PmProductCardProps) {
             {product.sku}
           </span>
         )}
-        {product.inStock && (
+        {product.sellingFast ? (
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-pm-terracotta/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-pm-terracotta">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pm-terracotta" />
+            Selling fast
+          </span>
+        ) : product.inStock ? (
           <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-pm-success-bg px-2 py-0.5 text-[11px] font-semibold text-pm-success">
             <span className="h-1.5 w-1.5 rounded-full bg-pm-success" />
             In stock
           </span>
-        )}
+        ) : null}
       </div>
 
       {/* Brand eyebrow */}
