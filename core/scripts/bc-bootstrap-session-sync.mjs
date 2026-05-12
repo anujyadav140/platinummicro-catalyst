@@ -201,33 +201,58 @@ async function main() {
   // BACK to Catalyst's login page (instead of showing its own form). It's
   // the keystone of session sync — without it, users see Stencil's
   // separate login UI and have to sign in twice.
-  //
-  // While we're here, also (optionally) point BC at our checkout overrides
-  // script. The script lives at /public/pm-checkout-overrides.js in this
-  // repo and is served at https://<storefront-host>/pm-checkout-overrides.js
-  // once Catalyst is deployed. It hides the Sign Out button on the
-  // checkout (footgun for B2B users mid-purchase).
   console.log('⚙️  Flipping should_redirect_to_storefront_for_auth=true…');
-  const checkoutSettingsBody = {
+  await bcPut(`/checkouts/settings/channels/${CHANNEL_ID}`, {
     should_redirect_to_storefront_for_auth: true,
-  };
-  const overrideUrl =
-    process.env.PM_CHECKOUT_OVERRIDES_URL || env.PM_CHECKOUT_OVERRIDES_URL;
-  if (overrideUrl) {
-    checkoutSettingsBody.custom_checkout_script_url = overrideUrl;
-    console.log(`   + custom_checkout_script_url=${overrideUrl}`);
-  } else {
-    console.log(
-      '   (skip custom_checkout_script_url — set PM_CHECKOUT_OVERRIDES_URL',
-    );
-    console.log(
-      '    to e.g. https://<storefront-host>/pm-checkout-overrides.js to',
-    );
-    console.log('    hide the Sign Out button at checkout.)',
-    );
-  }
-  await bcPut(`/checkouts/settings/channels/${CHANNEL_ID}`, checkoutSettingsBody);
+  });
   console.log('   ✅ checkout settings updated\n');
+
+  // ── Step 4: register the checkout-overrides script via Script Manager ─────
+  // BC's `custom_checkout_script_url` field would be the obvious way to
+  // inject our hide-Sign-Out CSS, but it's gated to channels using a
+  // "custom checkout type". Our channel uses BC's default Optimized
+  // Checkout, so we use the Script Manager API instead — it works on
+  // every channel type and lets us inline the script HTML (no public
+  // URL needed).
+  //
+  // Idempotent: looks up an existing entry by NAME and skips re-creating
+  // it. Bumping SCRIPT_NAME would force a re-install on next run.
+  const SCRIPT_NAME = 'PM Hide Sign Out at Checkout';
+  console.log(`📜 Registering Script Manager entry "${SCRIPT_NAME}"…`);
+
+  const scriptsListResp = await bcGet(
+    `/content/scripts?channel_id=${CHANNEL_ID}&name:in=${encodeURIComponent(SCRIPT_NAME)}`,
+  );
+  const existingScript = scriptsListResp?.data?.find(
+    (s) => s.name === SCRIPT_NAME,
+  );
+
+  if (existingScript) {
+    console.log(`   ✅ already installed (uuid=${existingScript.uuid})`);
+  } else {
+    // Inline JS that injects a <style> tag hiding every Sign Out
+    // affordance Stencil OPC renders. Kept on a single line so it
+    // round-trips through JSON cleanly. The source-of-truth pretty
+    // version still lives at core/public/pm-checkout-overrides.js for
+    // readability; keep the two in sync if you edit this.
+    const inlineScript =
+      "<script>(function(){var css='[data-test=\"sign-out-link\"], button[data-test=\"sign-out-link\"], a[href*=\"logout\" i][data-test*=\"sign\"], button[aria-label*=\"Sign Out\" i], button[aria-label*=\"Sign out\" i], a[aria-label*=\"Sign Out\" i], .checkout-customer .button[aria-label*=\"sign\" i][aria-label*=\"out\" i] { display: none !important; }';function inject(){if(document.getElementById('pm-checkout-overrides-style'))return;var s=document.createElement('style');s.id='pm-checkout-overrides-style';s.type='text/css';s.appendChild(document.createTextNode(css));(document.head||document.documentElement).appendChild(s);}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',inject);}else{inject();}document.addEventListener('visibilitychange',inject);})();</script>";
+
+    await bcPost(`/content/scripts?channel_id=${CHANNEL_ID}`, {
+      name: SCRIPT_NAME,
+      description:
+        'Hides Sign Out on Stencil OPC so B2B users mid-purchase cannot nuke their session.',
+      html: inlineScript,
+      load_method: 'default',
+      location: 'head',
+      visibility: 'checkout',
+      kind: 'script_tag',
+      auto_uninstall: false,
+      consent_category: 'essential',
+    });
+    console.log('   ➕ installed');
+  }
+  console.log('');
 
   // ── Step 4: confirm by reading back ───────────────────────────────────────
   console.log('🔎 Verifying configuration…');
