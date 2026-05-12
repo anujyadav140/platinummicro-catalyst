@@ -12,6 +12,7 @@
 
 import { PmHeroBanner } from '~/components/pm-hero-banner';
 import { PmCardSection } from '~/components/pm-card-section';
+import { PmBrandsSection } from '~/components/pm-brands-section';
 import type { PmPageSection } from '~/lib/pm-page-sections';
 
 export interface PmPageSectionsRendererProps {
@@ -30,6 +31,8 @@ export function PmPageSectionsRenderer({
             return <PmHeroBanner key={idx} banner={section.config} />;
           case 'cards':
             return <PmCardSection key={idx} section={section.config} />;
+          case 'brands':
+            return <PmBrandsSection key={idx} section={section.config} />;
           default: {
             // Exhaustiveness check — if a new kind is added to the
             // PmPageSection union, TS will flag this branch.

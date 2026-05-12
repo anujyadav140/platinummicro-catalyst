@@ -38,7 +38,7 @@ import {
  *   PM Page Banners            ← top level
  *   ├── PM Home Page Banners   ← slot (homepage) — middle level
  *   │   ├── Home Page Banner 1 ← section child — bottom level
- *   │   ├── Home Page Banner 2
+ *   │   ├── Authorized Partners
  *   │   └── ...
  *   └── PM Search Page Banners
  */
@@ -119,7 +119,9 @@ const cachedResolveSlot = unstable_cache(
           // Collect the slot's children (sections), preserving BC's
           // returned order (which mirrors admin's sort_order).
           const childIds =
-            slotCat.children?.map((c) => c.entityId).filter((id): id is number => typeof id === 'number') ?? [];
+            slotCat.children
+              ?.map((c) => c.entityId)
+              .filter((id): id is number => typeof id === 'number') ?? [];
           return { slotId: slotCat.entityId, childIds };
         }
       }
@@ -128,7 +130,7 @@ const cachedResolveSlot = unstable_cache(
       return null;
     }
   },
-  ['pm-page-banner-slot-resolution-v3'],
+  ['pm-page-banner-slot-resolution-v5'],
   { revalidate: 120, tags: ['pm-page-banners'] },
 );
 
@@ -158,7 +160,7 @@ const cachedSlotFields = unstable_cache(
       return { description: '' };
     }
   },
-  ['pm-page-banner-fields-v12'],
+  ['pm-page-banner-fields-v16'],
   { revalidate: 120, tags: ['pm-page-banners'] },
 );
 
@@ -194,8 +196,10 @@ export async function fetchPmPageBanner(
   const ids = [resolution.slotId, ...resolution.childIds];
   const allFields = await Promise.all(ids.map((id) => cachedSlotFields(id)));
 
+  // Each section comes back fully-hydrated from its parser — including
+  // pm-brands sections, whose brand list is now inline in the same
+  // description (no per-brand BC subcategory fetching needed).
   const sections: PmPageSection[] = [];
-  // Slot's own description first (back-compat), then each child in order.
   for (let i = 0; i < allFields.length; i++) {
     const { description, imageUrl } = allFields[i];
     if (!description) continue;

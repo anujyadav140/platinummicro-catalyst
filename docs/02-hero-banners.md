@@ -1,6 +1,11 @@
 # 02 — Hero Banners & Page Sections (admin guide)
 
-Admin-managed page sections (hero banners + card grids) on the storefront. Editable from BC admin without a code deploy.
+Admin-managed page sections (hero banners + card grids + brand carousels) on the storefront. Editable from BC admin without a code deploy.
+
+Three section types so far:
+- `<!--pm-hero ... -->` — hero banners (4 layout modes, full bg controls)
+- `<!--pm-cards ... -->` — card grids ("Industries we serve" pattern)
+- `<!--pm-brands ... -->` — brand-logo carousel ("Authorized Partners")
 
 ## Where sections can appear
 
@@ -540,3 +545,76 @@ column_2_link_2_label: FAQ
 column_2_link_2_href: /faq
 -->
 ```
+
+
+---
+
+# Brand carousel (Authorized Partners)
+
+Same admin pattern, different fence — `<!--pm-brands ... -->` on a BC category that has CHILDREN. Each child = one brand (one logo + name + click-through link). Admins manage the brand list by adding/removing/reordering the child categories in BC.
+
+## Structure
+
+```
+PM Page Banners
+└── PM Home Page Banners
+    └── Authorized Partners    ← parent category with <!--pm-brands ... --> in its description
+        ├── Cisco              ← child: name = "Cisco", logo URL in its description as `logo: <URL>`
+        ├── Intel
+        ├── AMD
+        └── ...
+```
+
+Add a brand → create a new subcategory under "Authorized Partners". Remove → delete (or hide) the subcategory. Reorder → change sort_order on the subcategories.
+
+## How each brand provides its logo
+
+Two options, in priority order:
+
+1. **BC's built-in Category Image** (drag-drop on the brand subcategory). Best UX — but BC's category-create API refuses external URLs at write time, so this only works for admin uploads, not scripted setup.
+2. **A `logo:` line in the brand subcategory's description**. Fallback used by the seed script. Example:
+   ```
+   logo: https://logo.clearbit.com/cisco.com
+   ```
+
+The fetcher tries (1) first, falls back to (2).
+
+Optional `href:` override in the description too:
+```
+logo: https://logo.clearbit.com/cisco.com
+href: /custom/cisco-landing
+```
+
+## Section schema (the `<!--pm-brands ... -->` block)
+
+| Key | What |
+|---|---|
+| `eyebrow` | Small uppercase label above title (default `Authorized partners`) |
+| `title` | Section heading (default `Stocked, supported, sourced direct.`) |
+| `cta_label` | Top-right link label (default `All manufacturers`) |
+| `cta_href` | Top-right link URL |
+| `bg` | Section background color |
+| `padding_y` | Vertical padding (default `80px`) |
+| `logo_height` | Max height of each logo in px (default `64`) |
+| `columns_lg` | Logos visible at ≥1024px (default `5`) |
+| `columns_md` | Logos visible at ≥768px (default `3`) |
+| `columns_sm` | Logos visible on mobile (default `2`) |
+| `brand_href_template` | URL pattern for each brand. `{name}` is replaced with the URL-encoded brand name. Default `/dev/preview/search?heading={name}` |
+
+## Example
+
+```
+<!--pm-brands
+eyebrow: Authorized partners
+title: Stocked, supported, sourced direct.
+cta_label: All manufacturers
+cta_href: /dev/preview/brands
+padding_y: 80px
+logo_height: 64
+columns_lg: 5
+columns_md: 3
+columns_sm: 2
+-->
+```
+
+The brand-list itself is fetched from BC's children, not from the block.

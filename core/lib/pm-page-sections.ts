@@ -32,16 +32,21 @@ import {
   parsePmCardSection,
   type PmCardSectionConfig,
 } from '~/lib/pm-card-section';
+import {
+  parsePmBrandsSection,
+  type PmBrandsSectionConfig,
+} from '~/lib/pm-brands-section';
 
 export type PmPageSection =
   | { kind: 'hero'; config: PmHeroBannerConfig }
-  | { kind: 'cards'; config: PmCardSectionConfig };
+  | { kind: 'cards'; config: PmCardSectionConfig }
+  | { kind: 'brands'; config: PmBrandsSectionConfig };
 
 /**
  * Matches ANY supported fence type. Captures the type name (hero/cards)
  * and the body, in document order, with the `g` flag.
  */
-const ANY_SECTION_RE = /<!--\s*pm-(hero|cards)\b\s*([\s\S]*?)-->/gi;
+const ANY_SECTION_RE = /<!--\s*pm-(hero|cards|brands)\b\s*([\s\S]*?)-->/gi;
 
 /**
  * Parse a description into an ordered list of typed sections. The
@@ -87,6 +92,11 @@ export function parsePmPageSections(
       if (config && config.cards.length > 0) {
         sections.push({ kind: 'cards', config });
       }
+    } else if (type === 'brands') {
+      // Parsed config starts with brands: [] — the fetcher attaches
+      // real brand entries (one per BC child) after this pass.
+      const config = parsePmBrandsSection(wrapped);
+      if (config) sections.push({ kind: 'brands', config });
     }
   }
 

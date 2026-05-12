@@ -20,7 +20,6 @@ import { PmHeader } from '~/components/pm-header';
 import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
 import { PmCategoryStrip } from '~/components/pm-category-strip';
 import { PmProductGrid } from '~/components/pm-product-grid';
-import { PmBrandWall } from '~/components/pm-brand-wall';
 import { PmFooter } from '~/components/pm-footer';
 import {
   PmQuickOrderModal,
@@ -112,8 +111,6 @@ function PreviewInner({
         linkHref="/dev/preview/sitemap"
         products={products}
       />
-
-      <PmBrandWall />
 
       <PmFooter />
 
