@@ -21,15 +21,54 @@
  */
 
 import Link from 'next/link';
-import { ArrowRight, X, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { ArrowRight, ChevronDown, ChevronUp, X, Trash2 } from 'lucide-react';
 import { usePmCompare } from '~/lib/pm-compare-store';
 
 const COMPARE_HREF = '/dev/preview/compare/';
 
 export function PmCompareBar() {
   const { items, ready, MAX, overflowed, remove, clear } = usePmCompare();
+  const pathname = usePathname();
+  // Default state: SHOW. User can collapse to a thin pill via the chevron.
+  const [collapsed, setCollapsed] = useState(false);
 
   if (!ready || items.length === 0) return null;
+
+  // Suppress on the compare page itself — the page already shows the same
+  // products in full-fidelity cards, so the tray would just be visual noise.
+  // Account for both with-trailing-slash and without (Next's trailingSlash
+  // config is on, but defensive matching is cheap).
+  if (
+    pathname === COMPARE_HREF ||
+    pathname === COMPARE_HREF.replace(/\/$/, '')
+  ) {
+    return null;
+  }
+
+  // Collapsed pill — keeps the affordance visible without dominating the
+  // viewport. Tapping the pill (or its chevron) re-expands the full tray.
+  if (collapsed) {
+    return (
+      <div className="fixed bottom-4 right-4 z-40">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label={`Expand compare tray (${items.length} of ${MAX} selected)`}
+          className="inline-flex items-center gap-2 rounded-full border border-pm-ink-200 bg-white px-4 py-2.5 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.18)] transition-colors hover:border-pm-ink-300"
+        >
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-pm-tan">
+            Compare
+          </span>
+          <span className="rounded-full bg-pm-navy-deep px-2 py-0.5 text-[11px] font-bold text-white">
+            {items.length}
+          </span>
+          <ChevronUp size={14} strokeWidth={2.25} className="text-pm-ink-500" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -126,6 +165,14 @@ export function PmCompareBar() {
             Compare
             <ArrowRight size={14} strokeWidth={2.25} />
           </Link>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse compare tray"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-pm-ink-200 bg-white text-pm-ink-500 transition-colors hover:border-pm-ink-300 hover:text-pm-ink-900"
+          >
+            <ChevronDown size={16} strokeWidth={2.25} />
+          </button>
         </div>
       </div>
     </div>
