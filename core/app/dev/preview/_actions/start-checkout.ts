@@ -23,8 +23,55 @@
 import { redirect } from 'next/navigation';
 
 import { applyCouponCode } from '~/app/[locale]/(default)/cart/_actions/apply-coupon-code';
-import { addToOrCreateCart } from '~/lib/cart';
-import { getCartId } from '~/lib/cart';
+import { getSessionCustomerAccessToken } from '~/auth';
+import { client } from '~/client';
+import { graphql } from '~/client/graphql';
+import { addToOrCreateCart, clearCartId, getCartId } from '~/lib/cart';
+
+/**
+ * Wipes the BC cart whose entityId is cached in our session, if any.
+ * Used at the top of every checkout-start so the cart we hand off to
+ * Stencil OPC matches `pm-quote-store` exactly — without this, clicking
+ * "Check out" → back → "Check out" again would APPEND the same line
+ * items twice to the same BC cart, doubling the order.
+ *
+ * Failures are logged and swallowed: a missing/already-deleted BC cart
+ * shouldn't block the user from starting checkout. The subsequent
+ * `addToOrCreateCart` call will create a brand-new BC cart either way.
+ */
+const DeleteCartMutation = graphql(`
+  mutation DeleteCartMutation($input: DeleteCartInput!) {
+    cart {
+      deleteCart(input: $input) {
+        deletedCartEntityId
+      }
+    }
+  }
+`);
+
+async function wipeExistingBcCart(): Promise<void> {
+  const existingId = await getCartId();
+  if (!existingId) return;
+
+  try {
+    const customerAccessToken = await getSessionCustomerAccessToken();
+    await client.fetch({
+      document: DeleteCartMutation,
+      variables: { input: { cartEntityId: existingId } },
+      customerAccessToken,
+      fetchOptions: { cache: 'no-store' },
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[start-checkout] deleteCart failed', err);
+  }
+
+  // Always clear the cookie even if the BC-side delete errored — if the
+  // cart truly is gone in BC, addToOrCreateCart will hit "cart not found"
+  // and re-create. If it isn't, our cookie still no longer references it
+  // so the user gets a fresh BC cart next.
+  await clearCartId();
+}
 
 export interface PmCheckoutLine {
   productEntityId: number;
@@ -62,9 +109,16 @@ export async function startCheckoutAction(
     redirect('/dev/preview/');
   }
 
-  // Pushes to BC's cart — creates one if no cookie cartId, otherwise
-  // appends. Server-side, so the session cookie update happens before
-  // the redirect below sees it.
+  // Wipe any pre-existing BC cart cached in our session before pushing
+  // line items. Without this, clicking Check out → browser back → Check
+  // out again would APPEND the same items twice to BC's cart, doubling
+  // the order. The user's pm-quote-store is the source of truth; BC's
+  // cart should match it exactly at handoff time, every time.
+  await wipeExistingBcCart();
+
+  // Pushes to BC's cart — now always creates a brand-new one (we just
+  // cleared the cookie above). Server-side, so the new cookie value lands
+  // before the redirect below reads it.
   await addToOrCreateCart({
     lineItems: valid.map((l) => ({
       productEntityId: l.productEntityId,
