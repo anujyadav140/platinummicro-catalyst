@@ -21,10 +21,47 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+
+/**
+ * localStorage key for cart persistence. Bumping the version ('-v1', '-v2'
+ * etc) will safely invalidate older shapes if PmBomLine ever changes
+ * incompatibly — old data is dropped on read, not migrated.
+ */
+const STORAGE_KEY = 'pm-quote-v1';
+
+function loadFromStorage(): PmBomLine[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (l): l is PmBomLine =>
+        typeof l === 'object' &&
+        l !== null &&
+        typeof (l as PmBomLine).sku === 'string' &&
+        typeof (l as PmBomLine).qty === 'number' &&
+        (l as PmBomLine).qty > 0,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveToStorage(lines: PmBomLine[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+  } catch {
+    // quota exceeded / storage disabled — non-fatal, drop silently.
+  }
+}
 
 export interface PmBomLine {
   /** Stable identifier — usually the SKU/MPN */
@@ -92,6 +129,28 @@ const PmQuoteContext = createContext<PmQuoteContextValue | null>(null);
 export function PmQuoteProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<PmBomLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  // Hydration flag. Until we've read from localStorage, suppress the
+  // persistence effect — otherwise the empty initial state would clobber
+  // saved data on the first render right after mount.
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate from localStorage AFTER mount. Doing this in a useEffect (not
+  // useState initializer) keeps SSR markup deterministic — the server
+  // always emits `[]`, then the client swaps in saved lines on hydration.
+  // This is the same pattern PmListsProvider uses; without it, navigating
+  // between PreviewShell / CartShell / etc. would reset the cart because
+  // each shell mounts its own PmQuoteProvider instance.
+  useEffect(() => {
+    setLines(loadFromStorage());
+    setHydrated(true);
+  }, []);
+
+  // Persist every change once hydrated. The guard prevents a write of `[]`
+  // on the very first render before the load completes, which would wipe
+  // saved cart contents on every page navigation.
+  useEffect(() => {
+    if (hydrated) saveToStorage(lines);
+  }, [lines, hydrated]);
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
