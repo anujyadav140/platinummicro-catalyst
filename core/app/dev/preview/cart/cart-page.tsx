@@ -48,6 +48,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { startCheckoutAction } from '~/app/dev/preview/_actions/start-checkout';
+import { usePmB2BNinja } from '~/components/pm-b2b-ninja';
 import { Image } from '~/components/image';
 import { PmCouponInput } from '~/components/pm-coupon-input';
 import { usePmQuote, type PmBomLine } from '~/lib/pm-quote-store';
@@ -334,6 +335,11 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
 function CartSummary({ lines }: { lines: PmBomLine[] }) {
   const [isCheckingOut, startCheckoutTransition] = useTransition();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const {
+    openQuoteWithProducts,
+    configured: ninjaConfigured,
+    ready: ninjaReady,
+  } = usePmB2BNinja();
 
   // Subtotal estimate — sum of (unitPrice × qty) for lines with prices.
   // Real number comes from BC at checkout; this is a friendly preview.
@@ -483,20 +489,42 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
 
         {/* Secondary — Send for quote. Always visible as an alternative
             (B2B buyers may want to negotiate volume / NET terms even on
-            in-stock items). */}
+            in-stock items). Hands off to B2B Ninja's hosted quote modal,
+            same flow the legacy platinummicro.com site uses. */}
         <button
           type="button"
           onClick={() => {
-            // Stub for v1 — the real submission flow lands when the sales
-            // notification integration is wired. For now, surface a clear
-            // expectation so the user isn't left guessing.
-            window.alert(
-              'Quote request received. Our sales team will be in touch within 1 business day.\n\n(Stub UI — wire to /api/quotes when the sales mailbox is configured.)',
+            if (!ninjaConfigured) {
+              window.alert(
+                'Quote requests are not configured for this environment yet.\n\nAsk the team to set NEXT_PUBLIC_B2B_NINJA_STORE_ID once B2B Ninja is installed on this BC channel.',
+              );
+              return;
+            }
+            if (!ninjaReady) {
+              window.alert(
+                'Quote engine is still loading — give it a second and try again.',
+              );
+              return;
+            }
+            // Push the cart's BC product IDs straight into B2B Ninja's
+            // current quote and pop their hosted modal. Lines without a
+            // resolved entityId (Quick Order paste, etc.) are dropped —
+            // B2B Ninja's UI lets the user add free-text items inside
+            // the modal if they need to.
+            openQuoteWithProducts(
+              lines
+                .filter((l) => typeof l.productEntityId === 'number')
+                .map((l) => ({
+                  id: l.productEntityId as number,
+                  qty: l.qty,
+                  options: [],
+                })),
             );
           }}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-5 py-3 text-[14px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-5 py-3 text-[14px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={ninjaConfigured && !ninjaReady}
         >
-          Send for quote
+          {ninjaConfigured && !ninjaReady ? 'Loading quote engine…' : 'Send for quote'}
         </button>
 
         <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-pm-ink-500">

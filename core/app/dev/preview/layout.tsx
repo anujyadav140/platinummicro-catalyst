@@ -7,6 +7,7 @@ import { fetchPmBanners, isPmTrustBarBanner } from '~/lib/pm-banners';
 import { fetchPmCategories } from '~/lib/pm-categories-fetcher';
 import { fetchPmFooterConfig } from '~/lib/pm-footer-fetcher';
 import { fetchPmMegaMenu } from '~/lib/pm-mega-menu-fetcher';
+import { PmB2BNinjaProvider } from '~/components/pm-b2b-ninja';
 import { PmBannerStrip } from '~/components/pm-banner-strip';
 import { PmCompareBar } from '~/components/pm-compare-bar';
 import { PmRangeSliderStyles } from '~/components/pm-range-slider';
@@ -72,15 +73,22 @@ export default async function PreviewLayout({ children }: { children: ReactNode 
         <PmNavProvider
           value={{ categories, megaMenu, topBarDismissed, trustBarHtml, footerConfig }}
         >
-          <PmCompareProvider>
-            <PmBannerStrip banners={otherBanners} placement="top" />
-            {children}
-            {/* Fixed compare tray — bottom-anchored to the viewport, so its
-                placement in source order only needs to live inside the
-                provider tree, above existing bottom-of-page elements. */}
-            <PmCompareBar />
-            <PmBannerStrip banners={otherBanners} placement="bottom" />
-          </PmCompareProvider>
+          {/* B2B Ninja loader — drops their headless storefront script
+              once at the layout level so every page in /dev/preview has
+              `window.BN` available. Reads NEXT_PUBLIC_B2B_NINJA_STORE_ID;
+              if unset, renders a no-op provider so previews still work
+              for contributors without B2B Ninja access. */}
+          <PmB2BNinjaProvider>
+            <PmCompareProvider>
+              <PmBannerStrip banners={otherBanners} placement="top" />
+              {children}
+              {/* Fixed compare tray — bottom-anchored to the viewport, so its
+                  placement in source order only needs to live inside the
+                  provider tree, above existing bottom-of-page elements. */}
+              <PmCompareBar />
+              <PmBannerStrip banners={otherBanners} placement="bottom" />
+            </PmCompareProvider>
+          </PmB2BNinjaProvider>
         </PmNavProvider>
       </body>
     </html>
