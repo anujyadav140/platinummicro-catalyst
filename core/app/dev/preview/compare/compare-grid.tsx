@@ -240,6 +240,8 @@ export function CompareGrid() {
         imageUrl: item.imageUrl,
         unitPrice: item.priceLabel,
         brand: item.brand,
+        inStock: item.inStock,
+        productEntityId: item.id,
       },
     ]);
     openQuote();

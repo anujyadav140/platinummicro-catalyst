@@ -38,6 +38,27 @@ export interface PmBomLine {
   unitPrice?: string;
   /** Optional brand/manufacturer */
   brand?: string;
+  /**
+   * Whether the line is purchasable RIGHT NOW.
+   *
+   *   true        — in stock, drawer offers a direct "Checkout" path
+   *   false       — out of stock, drawer falls back to "Send for quote"
+   *   undefined   — caller didn't say. Treated as IN-STOCK to keep older
+   *                 add-to-cart callsites working without changes; UPDATE
+   *                 those callsites to pass the real flag as you wire
+   *                 them through.
+   */
+  inStock?: boolean;
+  /**
+   * BC product entityId (NOT the SKU). Required to push the line into
+   * BC's actual cart at checkout-start time — BC's GraphQL `createCart`
+   * mutation keys on entityId, not SKU. PmProduct surfaces this as `id`.
+   *
+   * Optional because Quick Order (SKU-paste) callsites can't resolve an
+   * entityId without an extra BC roundtrip. Lines missing this field
+   * fall back to the "Send for quote" path even when in stock.
+   */
+  productEntityId?: number;
 }
 
 interface PmQuoteContextValue {

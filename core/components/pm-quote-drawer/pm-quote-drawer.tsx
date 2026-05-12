@@ -3,15 +3,31 @@
 /**
  * PmQuoteDrawer
  * -------------
- * 440px slide-in BOM/Quote pane. Replaces the traditional cart for the B2B
- * flow — instead of "checkout now", the primary CTA is "Send for quote",
- * which routes the line items to the sales team.
+ * 440px slide-in cart pane. Dual-mode CTA depending on stock:
+ *
+ *   - Every line in-stock        → "Check out" primary CTA, links to
+ *                                  /dev/preview/checkout which redirects to
+ *                                  BC's Stencil OPC via the cart redirect
+ *                                  mutation.
+ *   - One or more lines NOT in   → "Send for quote" CTA stays primary
+ *     stock (or stock unknown)     because we can't fulfill all items
+ *                                  immediately. The drawer also surfaces a
+ *                                  note explaining why the quote path is
+ *                                  needed (out-of-stock items, custom
+ *                                  configs, etc.).
+ *
+ * The split exists because Platinum Micro's catalog mixes truly purchasable
+ * SKUs (mainstream HPE / Dell / ASRock builds, in stock now) with
+ * configure-to-order / EOL items that genuinely need a salesperson's eyes.
+ * Forcing "Send for quote" everywhere hides the easy checkout path from
+ * the customers who could one-click-buy.
  *
  * Reads everything from the PmQuoteContext store. No props required.
  */
 
-import { useEffect } from 'react';
-import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
+import { X, ShoppingCart, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { startCheckoutAction } from '~/app/dev/preview/_actions/start-checkout';
 import { Image } from '~/components/image';
 import { PmCouponInput } from '~/components/pm-coupon-input';
 import { usePmQuote } from '~/lib/pm-quote-store';
@@ -20,6 +36,10 @@ const SCRIM_DURATION_MS = 200;
 
 export function PmQuoteDrawer() {
   const { lines, totalUnits, isOpen, close, removeLine, setQty, clear } = usePmQuote();
+  // Tracks the server-action lifecycle so the CTA can show a spinner +
+  // disable itself while BC creates the cart + we 302 to Stencil.
+  const [isCheckingOut, startCheckoutTransition] = useTransition();
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -30,6 +50,44 @@ export function PmQuoteDrawer() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, close]);
+
+  // Reset transient checkout error whenever the drawer reopens or the
+  // line set changes (otherwise a stale failure message hangs around).
+  useEffect(() => {
+    setCheckoutError(null);
+  }, [isOpen, lines.length]);
+
+  const handleCheckout = () => {
+    setCheckoutError(null);
+    startCheckoutTransition(async () => {
+      try {
+        await startCheckoutAction(
+          lines
+            .filter((l) => typeof l.productEntityId === 'number')
+            .map((l) => ({
+              productEntityId: l.productEntityId as number,
+              quantity: l.qty,
+            })),
+        );
+      } catch (err) {
+        // Next.js's redirect() throws NEXT_REDIRECT internally — that's
+        // success, not failure. Anything else is a genuine cart-creation
+        // error worth surfacing to the user.
+        const isRedirect =
+          typeof err === 'object' &&
+          err !== null &&
+          'digest' in err &&
+          typeof (err as { digest?: unknown }).digest === 'string' &&
+          (err as { digest: string }).digest.startsWith('NEXT_REDIRECT');
+        if (isRedirect) throw err;
+        // eslint-disable-next-line no-console
+        console.error('start-checkout failed', err);
+        setCheckoutError(
+          'Could not start checkout. Please try again — or use "Send for quote" to route this through sales.',
+        );
+      }
+    });
+  };
 
   return (
     <>
@@ -172,34 +230,94 @@ export function PmQuoteDrawer() {
         </div>
 
         {/* FOOT */}
-        {lines.length > 0 && (
-          <div className="flex shrink-0 flex-col gap-2.5 border-t border-pm-ink-200 bg-pm-tan-pale px-6 py-5">
-            <div className="flex justify-between text-[13px] text-pm-ink-700">
-              <span>Total units</span>
-              <span className="font-semibold">{totalUnits}</span>
-            </div>
-            <div className="flex justify-between text-[13px] text-pm-ink-500">
-              <span>Volume pricing</span>
-              <span>applied at quote</span>
-            </div>
+        {lines.length > 0 && (() => {
+          // A line counts as out-of-stock only when the caller EXPLICITLY
+          // says so (inStock === false). Lines added without a flag default
+          // to "purchasable" per the PmBomLine doc — that keeps older
+          // callsites (Quick Order paste, saved lists) on the safe side.
+          const outOfStockLines = lines.filter((l) => l.inStock === false);
+          // Lines missing productEntityId can't be pushed to BC's cart
+          // (createCart keys on entityId, not SKU) → those force the quote
+          // path too. Quick Order paste sits in this bucket.
+          const linesMissingEntityId = lines.filter(
+            (l) => typeof l.productEntityId !== 'number',
+          );
+          const canCheckOut =
+            outOfStockLines.length === 0 && linesMissingEntityId.length === 0;
+          const blockReason =
+            outOfStockLines.length > 0
+              ? (outOfStockLines.length === 1
+                  ? '1 item is currently out of stock — '
+                  : `${outOfStockLines.length} items are currently out of stock — `) +
+                'your cart will be sent to sales as a quote so we can ' +
+                'confirm availability and lead time.'
+              : linesMissingEntityId.length > 0
+                ? 'Some items still need to be matched against the catalog — ' +
+                  'your cart will be sent to sales for confirmation.'
+                : null;
 
-            <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                onClick={clear}
-                className="rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:bg-pm-ink-200"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                className="flex-1 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
-              >
-                Send for quote
-              </button>
+          return (
+            <div className="flex shrink-0 flex-col gap-2.5 border-t border-pm-ink-200 bg-pm-tan-pale px-6 py-5">
+              <div className="flex justify-between text-[13px] text-pm-ink-700">
+                <span>Total units</span>
+                <span className="font-semibold">{totalUnits}</span>
+              </div>
+              <div className="flex justify-between text-[13px] text-pm-ink-500">
+                <span>Tax &amp; shipping</span>
+                <span>calculated at checkout</span>
+              </div>
+
+              {blockReason && (
+                <div className="mt-1 flex gap-2 rounded-md border border-pm-warning-bg bg-pm-warning-bg/50 px-3 py-2 text-[12px] leading-[1.45] text-pm-warning">
+                  <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0" />
+                  <span>{blockReason}</span>
+                </div>
+              )}
+
+              {checkoutError && (
+                <div className="mt-1 rounded-md border border-pm-danger-bg bg-pm-danger-bg/40 px-3 py-2 text-[12px] leading-[1.45] text-pm-danger">
+                  {checkoutError}
+                </div>
+              )}
+
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={clear}
+                  disabled={isCheckingOut}
+                  className="rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-200 disabled:opacity-50"
+                >
+                  Clear
+                </button>
+
+                {canCheckOut ? (
+                  <button
+                    type="button"
+                    onClick={handleCheckout}
+                    disabled={isCheckingOut}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:enabled:bg-pm-terracotta-light disabled:opacity-70"
+                  >
+                    {isCheckingOut ? (
+                      <>
+                        <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+                        Starting checkout…
+                      </>
+                    ) : (
+                      'Check out'
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex-1 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+                  >
+                    Send for quote
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </aside>
     </>
   );

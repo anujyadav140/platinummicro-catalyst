@@ -51,6 +51,8 @@ export function PmProductRow({ product }: PmProductRowProps) {
         imageUrl: product.imageUrl,
         unitPrice: product.priceLabel,
         brand: product.brand,
+        inStock: product.inStock,
+        productEntityId: product.id,
       },
     ]);
     open();

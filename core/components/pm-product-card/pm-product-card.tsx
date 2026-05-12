@@ -45,6 +45,8 @@ export function PmProductCard({ product }: PmProductCardProps) {
         imageUrl: product.imageUrl,
         unitPrice: product.priceLabel,
         brand: product.brand,
+        inStock: product.inStock,
+        productEntityId: product.id,
       },
     ]);
     open();

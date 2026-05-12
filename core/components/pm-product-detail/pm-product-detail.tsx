@@ -171,6 +171,8 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
         imageUrl: heroImageUrl,
         unitPrice: product.priceLabel,
         brand: product.brand,
+        inStock: product.inStock,
+        productEntityId: product.id,
       },
     ]);
     open();
