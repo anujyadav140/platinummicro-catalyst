@@ -26,6 +26,7 @@
 import { unstable_cache } from 'next/cache';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
+import { revalidate } from '~/client/revalidate-target';
 import {
   PM_MEGA_MENU,
   type PmMegaBrand,
@@ -127,7 +128,7 @@ const cachedAllBrandIdsByName = unstable_cache(
       const { data } = await client.fetch({
         document: PmBrandsPageQuery,
         variables: { after: cursor },
-        fetchOptions: { next: { revalidate: 60 } },
+        fetchOptions: { next: { revalidate } },
       });
       const collection = data?.site?.brands;
       for (const edge of collection?.edges ?? []) {
@@ -171,7 +172,7 @@ async function fetchCategoryDetails(
         const { data } = await client.fetch({
           document: PmCategoryDetailsQuery,
           variables: { entityId: id },
-          fetchOptions: { next: { revalidate: 60 } },
+          fetchOptions: { next: { revalidate } },
         });
         return { id, cat: data?.site?.category };
       } catch {
@@ -365,7 +366,7 @@ export async function fetchPmMegaMenu(): Promise<PmMegaMenuMap> {
   try {
     const { data } = await client.fetch({
       document: PmMegaMenuQuery,
-      fetchOptions: { next: { revalidate: 60 } },
+      fetchOptions: { next: { revalidate } },
     });
 
     const tree = data?.site?.categoryTree ?? [];

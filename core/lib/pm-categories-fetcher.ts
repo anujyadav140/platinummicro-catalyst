@@ -22,6 +22,7 @@
 
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
+import { revalidate } from '~/client/revalidate-target';
 import { PM_CATEGORIES, type PmCategory } from '~/lib/pm-categories';
 
 const PmCategoriesQuery = graphql(`
@@ -88,7 +89,7 @@ export async function fetchPmCategories(): Promise<PmCategory[]> {
   try {
     const { data } = await client.fetch({
       document: PmCategoriesQuery,
-      fetchOptions: { next: { revalidate: 60 } },
+      fetchOptions: { next: { revalidate } },
     });
 
     const tree = data?.site?.categoryTree ?? [];

@@ -16,6 +16,7 @@
 import { unstable_cache } from 'next/cache';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
+import { revalidate } from '~/client/revalidate-target';
 import type { PmProduct } from '~/lib/pm-products';
 import {
   augmentToInternal,
@@ -104,7 +105,7 @@ const cachedSearchFetch = unstable_cache(
     const { data } = await client.fetch({
       document: PmSearchQuery,
       variables: { searchTerm, limit },
-      fetchOptions: { next: { revalidate: 120 } },
+      fetchOptions: { next: { revalidate } },
     });
 
     const products = data?.site?.search?.searchProducts?.products;
@@ -129,7 +130,7 @@ const cachedSearchFetch = unstable_cache(
     return { hits, totalCount, query: searchTerm };
   },
   ['pm-search-typeahead'],
-  { revalidate: 120, tags: ['pm-search'] },
+  { revalidate, tags: ['pm-search'] },
 );
 
 export async function searchPmProducts(
@@ -204,7 +205,7 @@ const cachedSearchListingRaw = unstable_cache(
     const { data } = await client.fetch({
       document: PmSearchListingQuery,
       variables: { searchTerm, limit },
-      fetchOptions: { next: { revalidate: 120 } },
+      fetchOptions: { next: { revalidate } },
     });
 
     const searchProducts = data?.site?.search?.searchProducts?.products;
@@ -233,7 +234,7 @@ const cachedSearchListingRaw = unstable_cache(
     return { rawProducts, totalCount, query: searchTerm };
   },
   ['pm-search-listing-raw'],
-  { revalidate: 120, tags: ['pm-search'] },
+  { revalidate, tags: ['pm-search'] },
 );
 
 // ---------------------------------------------------------------------------
@@ -293,7 +294,7 @@ const cachedBrandListingRaw = unstable_cache(
     const { data } = await client.fetch({
       document: PmBrandListingQuery,
       variables: { brandIds, limit },
-      fetchOptions: { next: { revalidate: 120 } },
+      fetchOptions: { next: { revalidate } },
     });
 
     const products = data?.site?.search?.searchProducts?.products;
@@ -322,7 +323,7 @@ const cachedBrandListingRaw = unstable_cache(
     return { rawProducts, totalCount };
   },
   ['pm-brand-listing-raw'],
-  { revalidate: 120, tags: ['pm-search'] },
+  { revalidate, tags: ['pm-search'] },
 );
 
 /**
