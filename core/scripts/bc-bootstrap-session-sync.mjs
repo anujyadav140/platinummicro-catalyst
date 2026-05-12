@@ -201,10 +201,32 @@ async function main() {
   // BACK to Catalyst's login page (instead of showing its own form). It's
   // the keystone of session sync — without it, users see Stencil's
   // separate login UI and have to sign in twice.
+  //
+  // While we're here, also (optionally) point BC at our checkout overrides
+  // script. The script lives at /public/pm-checkout-overrides.js in this
+  // repo and is served at https://<storefront-host>/pm-checkout-overrides.js
+  // once Catalyst is deployed. It hides the Sign Out button on the
+  // checkout (footgun for B2B users mid-purchase).
   console.log('⚙️  Flipping should_redirect_to_storefront_for_auth=true…');
-  await bcPut(`/checkouts/settings/channels/${CHANNEL_ID}`, {
+  const checkoutSettingsBody = {
     should_redirect_to_storefront_for_auth: true,
-  });
+  };
+  const overrideUrl =
+    process.env.PM_CHECKOUT_OVERRIDES_URL || env.PM_CHECKOUT_OVERRIDES_URL;
+  if (overrideUrl) {
+    checkoutSettingsBody.custom_checkout_script_url = overrideUrl;
+    console.log(`   + custom_checkout_script_url=${overrideUrl}`);
+  } else {
+    console.log(
+      '   (skip custom_checkout_script_url — set PM_CHECKOUT_OVERRIDES_URL',
+    );
+    console.log(
+      '    to e.g. https://<storefront-host>/pm-checkout-overrides.js to',
+    );
+    console.log('    hide the Sign Out button at checkout.)',
+    );
+  }
+  await bcPut(`/checkouts/settings/channels/${CHANNEL_ID}`, checkoutSettingsBody);
   console.log('   ✅ checkout settings updated\n');
 
   // ── Step 4: confirm by reading back ───────────────────────────────────────

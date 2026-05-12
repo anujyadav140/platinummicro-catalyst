@@ -27,12 +27,55 @@ import {
   type ReactNode,
 } from 'react';
 
+import type { PmCouponValidation } from '~/lib/pm-coupons';
+
 /**
  * localStorage key for cart-line persistence. Bumping the version ('-v1',
  * '-v2' etc) will safely invalidate older shapes if PmBomLine ever changes
  * incompatibly — old data is dropped on read, not migrated.
  */
 const STORAGE_KEY = 'pm-quote-v1';
+
+/**
+ * Separate localStorage key for the applied coupon so its lifecycle is
+ * decoupled from the line items — e.g., clearing the cart doesn't lose
+ * the validated coupon, and changing a coupon doesn't rewrite the lines
+ * blob.
+ */
+const COUPON_KEY = 'pm-quote-coupon-v1';
+
+function loadCouponFromStorage(): PmCouponValidation | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(COUPON_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      typeof (parsed as PmCouponValidation).code === 'string' &&
+      (parsed as PmCouponValidation).valid === true
+    ) {
+      return parsed as PmCouponValidation;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCouponToStorage(coupon: PmCouponValidation | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (coupon && coupon.valid) {
+      window.localStorage.setItem(COUPON_KEY, JSON.stringify(coupon));
+    } else {
+      window.localStorage.removeItem(COUPON_KEY);
+    }
+  } catch {
+    // quota / disabled — drop silently
+  }
+}
 
 /**
  * sessionStorage key for drawer open/closed state.
@@ -155,6 +198,15 @@ interface PmQuoteContextValue {
 
   /** Empty the BOM */
   clear: () => void;
+
+  /**
+   * Applied coupon (validated against BC's coupons API). Null when no
+   * coupon is applied. Persisted to localStorage so it survives page
+   * navigation and is available at checkout-start time for the
+   * server-side `applyCheckoutCoupon` mutation.
+   */
+  appliedCoupon: PmCouponValidation | null;
+  setAppliedCoupon: (coupon: PmCouponValidation | null) => void;
 }
 
 const PmQuoteContext = createContext<PmQuoteContextValue | null>(null);
@@ -162,6 +214,8 @@ const PmQuoteContext = createContext<PmQuoteContextValue | null>(null);
 export function PmQuoteProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<PmBomLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [appliedCoupon, setAppliedCouponState] =
+    useState<PmCouponValidation | null>(null);
   // Hydration flag. Until we've read from storage, suppress the
   // persistence effects — otherwise the empty initial state would clobber
   // saved data on the first render right after mount.
@@ -177,6 +231,7 @@ export function PmQuoteProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setLines(loadFromStorage());
     setIsOpen(loadDrawerOpenFromSession());
+    setAppliedCouponState(loadCouponFromStorage());
     setHydrated(true);
   }, []);
 
@@ -193,6 +248,19 @@ export function PmQuoteProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) saveDrawerOpenToSession(isOpen);
   }, [isOpen, hydrated]);
+
+  // Persist applied coupon (localStorage so it survives refresh, same
+  // as the cart contents themselves).
+  useEffect(() => {
+    if (hydrated) saveCouponToStorage(appliedCoupon);
+  }, [appliedCoupon, hydrated]);
+
+  const setAppliedCoupon = useCallback(
+    (coupon: PmCouponValidation | null) => {
+      setAppliedCouponState(coupon);
+    },
+    [],
+  );
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
@@ -249,8 +317,23 @@ export function PmQuoteProvider({ children }: { children: ReactNode }) {
       removeLine,
       setQty,
       clear,
+      appliedCoupon,
+      setAppliedCoupon,
     }),
-    [lines, totalUnits, isOpen, open, close, toggle, addLines, removeLine, setQty, clear],
+    [
+      lines,
+      totalUnits,
+      isOpen,
+      open,
+      close,
+      toggle,
+      addLines,
+      removeLine,
+      setQty,
+      clear,
+      appliedCoupon,
+      setAppliedCoupon,
+    ],
   );
 
   return <PmQuoteContext.Provider value={value}>{children}</PmQuoteContext.Provider>;

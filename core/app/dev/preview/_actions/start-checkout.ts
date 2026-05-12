@@ -22,14 +22,30 @@
 
 import { redirect } from 'next/navigation';
 
+import { applyCouponCode } from '~/app/[locale]/(default)/cart/_actions/apply-coupon-code';
 import { addToOrCreateCart } from '~/lib/cart';
+import { getCartId } from '~/lib/cart';
 
 export interface PmCheckoutLine {
   productEntityId: number;
   quantity: number;
 }
 
-export async function startCheckoutAction(lines: PmCheckoutLine[]) {
+export async function startCheckoutAction(
+  lines: PmCheckoutLine[],
+  /**
+   * Optional validated coupon code from PmQuoteStore. When present we
+   * apply it to the BC checkout (which BC creates implicitly from the
+   * cart) AFTER the line items land, so the coupon carries through to
+   * Stencil OPC without the user having to retype it there.
+   *
+   * Failures here do NOT block checkout — if BC rejects the code (race
+   * condition, cart-minimum not met, etc.) we still want the user to
+   * reach Stencil so they can fix it there. The error is logged for
+   * follow-up; the redirect proceeds.
+   */
+  couponCode?: string | null,
+) {
   // Defensive filter — drop anything that lost its entityId or has a
   // non-positive quantity (corrupted client state, paste flow stragglers).
   const valid = lines.filter(
@@ -55,6 +71,27 @@ export async function startCheckoutAction(lines: PmCheckoutLine[]) {
       quantity: l.quantity,
     })),
   });
+
+  // Apply the validated coupon to the BC checkout, if one is set.
+  // In BigCommerce the cart and the checkout share the same entityId,
+  // so `cartId` is what `applyCheckoutCoupon` expects. We log and swallow
+  // any error so a coupon hiccup never strands the user on our page —
+  // they'll see Stencil OPC, can re-enter the code if needed.
+  const trimmedCode = couponCode?.trim().toUpperCase();
+  if (trimmedCode) {
+    try {
+      const cartId = await getCartId();
+      if (cartId) {
+        await applyCouponCode({
+          checkoutEntityId: cartId,
+          couponCode: trimmedCode,
+        });
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[start-checkout] applyCouponCode failed', err);
+    }
+  }
 
   // /checkout reads cartId from the session cookie, calls BC's
   // createCartRedirectUrls mutation, and 302s to Stencil's OPC URL.

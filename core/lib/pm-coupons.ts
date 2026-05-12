@@ -26,14 +26,47 @@ interface BcCoupon {
   num_uses?: number;
 }
 
+/**
+ * BC coupon type codes we model explicitly. Anything else is treated as
+ * a generic "discount" with no client-side preview math.
+ */
+export type PmCouponType =
+  | 'percentage_discount'
+  | 'cart_dollars_off'
+  | 'shipping_amount_off'
+  | 'free_shipping'
+  | 'per_item_discount'
+  | 'other';
+
 export interface PmCouponValidation {
   valid: boolean;
   /** The normalized code (uppercased, trimmed) */
   code: string;
   /** When valid: human-readable summary like "10% off" or "Free shipping" */
   summary?: string;
+  /** When valid: BC's coupon type code, normalized into our enum. */
+  type?: PmCouponType;
+  /**
+   * When valid: numeric amount in either dollars or percent depending on
+   * `type`. Used for the client-side discount preview on the cart page;
+   * the authoritative number always comes from BC at checkout.
+   */
+  amount?: number;
   /** When invalid: short reason ("Code not found", "This code has expired", "This code is disabled") */
   reason?: string;
+}
+
+function normalizeType(bcType: string): PmCouponType {
+  switch (bcType) {
+    case 'percentage_discount':
+    case 'cart_dollars_off':
+    case 'shipping_amount_off':
+    case 'free_shipping':
+    case 'per_item_discount':
+      return bcType;
+    default:
+      return 'other';
+  }
 }
 
 function buildSummary(type: string, amount: string | number): string {
@@ -117,10 +150,13 @@ export async function validatePmCoupon(rawCode: string): Promise<PmCouponValidat
       return { valid: false, code, reason: 'This code has reached its usage limit' };
     }
 
+    const amount = Number(match.amount);
     return {
       valid: true,
       code,
       summary: buildSummary(match.type, match.amount),
+      type: normalizeType(match.type),
+      amount: Number.isFinite(amount) ? amount : undefined,
     };
   } catch (err) {
     // eslint-disable-next-line no-console

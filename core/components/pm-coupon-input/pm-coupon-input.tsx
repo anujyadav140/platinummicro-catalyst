@@ -3,27 +3,39 @@
 /**
  * PmCouponInput
  * -------------
- * Promo-code row for the quote drawer. Customer types a code, hits Apply,
- * we POST to `/dev/preview/api/coupons/validate` and show:
+ * Promo-code row used in both the cart-drawer footer and the dedicated
+ * cart page summary. Customer types a code, hits Apply, we POST to
+ * `/dev/preview/api/coupons/validate` (which talks to BC's REST coupons
+ * endpoint) and show:
  *   - green check + summary on a valid coupon (with a Remove link to clear)
  *   - red X + reason on an invalid one
  *   - spinner while checking
  *
- * State is local to this component for v1 — there is no real BC cart yet,
- * so applied coupons aren't persisted into the quote store. When a real
- * cart lands, lift this into `PmQuoteContext`.
+ * The applied coupon lives in `PmQuoteContext` (localStorage-persisted)
+ * so it:
+ *   - survives navigation between cart drawer ↔ cart page
+ *   - is available at checkout-start time for the server-side
+ *     `applyCheckoutCoupon` mutation that pushes it into the BC cart
+ *   - lets the cart summary compute a discount preview row
+ *
+ * The transient form state (typed code, in-flight status, last error
+ * reason) stays local — only the validated result is shared.
  */
 
 import { useRef, useState, type FormEvent } from 'react';
 import { Check, Loader2, X } from 'lucide-react';
+import { usePmQuote } from '~/lib/pm-quote-store';
 import type { PmCouponValidation } from '~/lib/pm-coupons';
 
-type Status = 'idle' | 'loading' | 'valid' | 'invalid';
+type Status = 'idle' | 'loading' | 'invalid';
 
 export function PmCouponInput() {
+  const { appliedCoupon, setAppliedCoupon } = usePmQuote();
+
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<Status>('idle');
-  const [result, setResult] = useState<PmCouponValidation | null>(null);
+  const [invalidResult, setInvalidResult] =
+    useState<PmCouponValidation | null>(null);
 
   // Stale-request guard: cancel any in-flight check before kicking off a new one.
   const abortRef = useRef<AbortController | null>(null);
@@ -37,7 +49,7 @@ export function PmCouponInput() {
     abortRef.current = controller;
 
     setStatus('loading');
-    setResult(null);
+    setInvalidResult(null);
 
     try {
       const res = await fetch('/dev/preview/api/coupons/validate', {
@@ -50,11 +62,18 @@ export function PmCouponInput() {
 
       if (controller.signal.aborted) return;
 
-      setResult(data);
-      setStatus(data.valid ? 'valid' : 'invalid');
+      if (data.valid) {
+        setAppliedCoupon(data);
+        setStatus('idle');
+        setInvalidResult(null);
+        setCode('');
+      } else {
+        setInvalidResult(data);
+        setStatus('invalid');
+      }
     } catch (err) {
       if ((err as { name?: string })?.name === 'AbortError') return;
-      setResult({
+      setInvalidResult({
         valid: false,
         code: code.trim().toUpperCase(),
         reason: 'Could not check this code right now',
@@ -66,12 +85,13 @@ export function PmCouponInput() {
   function handleRemove() {
     abortRef.current?.abort();
     setCode('');
-    setResult(null);
+    setInvalidResult(null);
     setStatus('idle');
+    setAppliedCoupon(null);
   }
 
   const isLoading = status === 'loading';
-  const isValid = status === 'valid' && result?.valid;
+  const isValid = Boolean(appliedCoupon?.valid);
 
   return (
     <div className="rounded-md border border-pm-ink-200 bg-pm-paper p-4">
@@ -83,8 +103,8 @@ export function PmCouponInput() {
         <div className="mt-2 flex items-center justify-between gap-2 text-[13px]">
           <div className="flex min-w-0 items-center gap-1.5 text-pm-success">
             <Check size={14} strokeWidth={2} className="shrink-0" />
-            <span className="font-semibold">{result?.code}</span>
-            <span className="truncate text-pm-ink-700">— {result?.summary}</span>
+            <span className="font-semibold">{appliedCoupon?.code}</span>
+            <span className="truncate text-pm-ink-700">— {appliedCoupon?.summary}</span>
           </div>
           <button
             type="button"
@@ -103,7 +123,7 @@ export function PmCouponInput() {
               setCode(e.target.value);
               if (status === 'invalid') {
                 setStatus('idle');
-                setResult(null);
+                setInvalidResult(null);
               }
             }}
             placeholder="Coupon code"
@@ -130,10 +150,10 @@ export function PmCouponInput() {
         </form>
       )}
 
-      {status === 'invalid' && result?.reason && (
+      {status === 'invalid' && invalidResult?.reason && (
         <div className="mt-2 flex items-center gap-1.5 text-[12px] text-pm-danger">
           <X size={13} strokeWidth={2} className="shrink-0" />
-          <span>{result.reason}</span>
+          <span>{invalidResult.reason}</span>
         </div>
       )}
     </div>

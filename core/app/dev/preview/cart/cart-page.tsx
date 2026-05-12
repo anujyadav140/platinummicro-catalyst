@@ -45,6 +45,7 @@ import {
   Minus,
   Plus,
   ShoppingCart,
+  Tag,
   Trash2,
 } from 'lucide-react';
 import { startCheckoutAction } from '~/app/dev/preview/_actions/start-checkout';
@@ -77,7 +78,7 @@ function formatUSD(n: number): string {
 }
 
 export function CartPageContent() {
-  const { lines, totalUnits, removeLine, setQty, clear } = usePmQuote();
+  const { lines, totalUnits, removeLine, setQty } = usePmQuote();
 
   if (lines.length === 0) {
     return <CartEmptyState />;
@@ -87,32 +88,14 @@ export function CartPageContent() {
     <div className="mx-auto max-w-pm-container px-8 py-10">
       <Breadcrumb />
 
-      <header className="mt-2 mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-pm-ink-200 pb-6">
-        <div>
-          <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight text-pm-ink-900 sm:text-[36px]">
-            Your cart
-          </h1>
-          <p className="mt-1.5 text-[14px] text-pm-ink-500">
-            {lines.length} {lines.length === 1 ? 'item' : 'items'} ·{' '}
-            {totalUnits} {totalUnits === 1 ? 'unit' : 'units'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (
-              window.confirm(
-                'Remove every item from your cart? This cannot be undone.',
-              )
-            ) {
-              clear();
-            }
-          }}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-pm-ink-500 transition-colors hover:text-pm-danger"
-        >
-          <Trash2 size={14} strokeWidth={1.75} />
-          Clear cart
-        </button>
+      <header className="mt-2 mb-8 border-b border-pm-ink-200 pb-6">
+        <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight text-pm-ink-900 sm:text-[36px]">
+          Your cart
+        </h1>
+        <p className="mt-1.5 text-[14px] text-pm-ink-500">
+          {lines.length} {lines.length === 1 ? 'item' : 'items'} ·{' '}
+          {totalUnits} {totalUnits === 1 ? 'unit' : 'units'}
+        </p>
       </header>
 
       {/* Two-column layout. The right column sticks on lg+ so the summary
@@ -335,6 +318,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
 function CartSummary({ lines }: { lines: PmBomLine[] }) {
   const [isCheckingOut, startCheckoutTransition] = useTransition();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const { appliedCoupon } = usePmQuote();
   const {
     openQuoteWithProducts,
     configured: ninjaConfigured,
@@ -354,6 +338,28 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
     [lines],
   );
   const hasUnpricedLines = lines.some((l) => parsePrice(l.unitPrice) === null);
+
+  // Client-side discount preview based on the validated coupon's type +
+  // amount. Authoritative number comes from BC at checkout (we may show
+  // a slightly different value if e.g. the coupon excludes specific
+  // categories), but this gives the user a real-time signal that the
+  // coupon is taking effect. Shipping discounts intentionally show as
+  // "shows at checkout" because we don't have a shipping number yet.
+  const couponDiscount = useMemo(() => {
+    if (!appliedCoupon || !appliedCoupon.valid) return 0;
+    if (typeof appliedCoupon.amount !== 'number') return 0;
+    switch (appliedCoupon.type) {
+      case 'percentage_discount':
+        return Math.max(0, subtotal * (appliedCoupon.amount / 100));
+      case 'cart_dollars_off':
+        return Math.max(0, Math.min(subtotal, appliedCoupon.amount));
+      default:
+        // shipping_amount_off, free_shipping, per_item_discount, other
+        // — can't reliably preview from cart context alone.
+        return 0;
+    }
+  }, [appliedCoupon, subtotal]);
+  const postDiscountSubtotal = Math.max(0, subtotal - couponDiscount);
 
   const outOfStockLines = lines.filter((l) => l.inStock === false);
   const linesMissingEntityId = lines.filter(
@@ -381,6 +387,9 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
               productEntityId: l.productEntityId as number,
               quantity: l.qty,
             })),
+          // Forward the validated coupon code so the server action can
+          // apply it to BC's checkout before redirecting to Stencil OPC.
+          appliedCoupon?.valid ? appliedCoupon.code : null,
         );
       } catch (err) {
         const isRedirect =
@@ -412,9 +421,34 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
           label={`Subtotal (${totalUnits} ${totalUnits === 1 ? 'unit' : 'units'})`}
           value={subtotal > 0 ? formatUSD(subtotal) : '—'}
         />
+
+        {/* Discount row — only renders when a coupon is applied AND it
+            translates into a previewable amount. Shipping-only coupons
+            (free_shipping / shipping_amount_off) fall through to the
+            shipping line label below so the user still knows the coupon
+            is doing something. */}
+        {appliedCoupon?.valid && couponDiscount > 0 && (
+          <div className="flex items-baseline justify-between text-[13px]">
+            <span className="inline-flex items-center gap-1.5 text-pm-success">
+              <Tag size={12} strokeWidth={2} />
+              {appliedCoupon.code}
+              <span className="text-pm-ink-500">({appliedCoupon.summary})</span>
+            </span>
+            <span className="font-medium text-pm-success">
+              −{formatUSD(couponDiscount)}
+            </span>
+          </div>
+        )}
+
         <SummaryRow
           label="Shipping"
-          value="Calculated at checkout"
+          value={
+            appliedCoupon?.valid &&
+            (appliedCoupon.type === 'free_shipping' ||
+              appliedCoupon.type === 'shipping_amount_off')
+              ? 'Discount shows at checkout'
+              : 'Calculated at checkout'
+          }
           muted
         />
         <SummaryRow
@@ -436,7 +470,7 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
             Estimated total
           </span>
           <span className="text-[22px] font-bold tracking-tight text-pm-navy-deep">
-            {subtotal > 0 ? formatUSD(subtotal) : '—'}
+            {subtotal > 0 ? formatUSD(postDiscountSubtotal) : '—'}
           </span>
         </div>
         <p className="-mt-1 text-right text-[11px] text-pm-ink-500">
