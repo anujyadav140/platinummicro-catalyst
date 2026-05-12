@@ -52,7 +52,7 @@ const PmFeaturedProductsQuery = graphql(`
             }
             defaultImage {
               altText
-              url(width: 500, height: 500)
+              url: urlTemplate(lossy: true)
             }
             inventory {
               isInStock

@@ -19,10 +19,24 @@
 
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { Image } from '~/components/image';
 import type { PmHeroBannerConfig } from '~/lib/pm-hero-banner';
 
 export interface PmHeroBannerProps {
   banner: PmHeroBannerConfig;
+}
+
+/**
+ * Substitute the BC urlTemplate `{:size}` placeholder with a concrete
+ * width param. CSS `background-image: url(...)` can't go through the
+ * Next.js Image loader, so we pick a sensible bake-time width here.
+ * Raw URLs (no placeholder) pass through unchanged — admins who paste
+ * full URLs into the description's `image:` / `bg_image:` keys keep
+ * working without code changes.
+ */
+function subSize(url: string | undefined, width: number): string | undefined {
+  if (!url) return undefined;
+  return url.replace('{:size}', `${width}w`);
 }
 
 // Defaults chosen to look reasonable when ALL optional keys are unset
@@ -123,7 +137,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage: `url("${bgImageUrl}")`,
+            backgroundImage: `url("${subSize(bgImageUrl, 1920)}")`,
             backgroundSize: bgImageSize,
             backgroundPosition: bgImagePosition,
             backgroundRepeat: bgImageRepeat,
@@ -158,7 +172,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
       // edges — e.g. set to '150%' to crop out the source's white
       // margins. `imageHalfPosition` shifts the focal point to keep
       // the product centered after zooming.
-      backgroundImage: imageUrl ? `url("${imageUrl}")` : undefined,
+      backgroundImage: imageUrl ? `url("${subSize(imageUrl, 1280)}")` : undefined,
       backgroundSize: imageHalfSize,
       backgroundPosition: imageHalfPosition,
       backgroundRepeat: 'no-repeat',
@@ -180,12 +194,13 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         style={contentSideStyle}
       >
         {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-          <img
+          <Image
             src={logoUrl}
             alt=""
+            width={240}
+            height={96}
+            sizes="240px"
             className="mb-4 h-12 w-auto object-contain"
-            loading="lazy"
           />
         )}
         {headline && (
@@ -321,23 +336,34 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
           {(hasImages || logoUrl) && (
             <div className="flex flex-1 items-center justify-end gap-5">
               {logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet
-                <img
+                <Image
                   src={logoUrl}
                   alt=""
+                  width={320}
+                  height={128}
+                  sizes="320px"
                   className="h-16 w-auto shrink-0 object-contain"
-                  loading="lazy"
                 />
               )}
               {hasImages && (
                 <div className="flex flex-1 items-center justify-end gap-3 sm:gap-4">
                   {allImages.map((url, idx) => (
-                    // eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet
-                    <img
+                    <Image
                       key={`${url}-${idx}`}
                       src={url}
                       alt={idx === 0 ? (headline ?? '') : ''}
-                      loading="lazy"
+                      width={560}
+                      height={560}
+                      sizes={
+                        imageCount === 1
+                          ? '(min-width: 1024px) 560px, 70vw'
+                          : imageCount === 2
+                            ? '(min-width: 1024px) 280px, 35vw'
+                            : imageCount === 3
+                              ? '(min-width: 1024px) 200px, 30vw'
+                              : '(min-width: 1024px) 180px, 25vw'
+                      }
+                      priority={idx === 0}
                       // Cap the rail's max height so multiple images stay
                       // proportional. Single image gets more room; 2+ shrink.
                       className={`w-auto shrink object-contain ${
@@ -379,7 +405,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage: `url("${imageUrl}")`,
+            backgroundImage: `url("${subSize(imageUrl, 1920)}")`,
             backgroundSize: isCover ? 'cover' : 'contain',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -414,12 +440,13 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         }}
       >
         {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-          <img
+          <Image
             src={logoUrl}
             alt=""
+            width={280}
+            height={112}
+            sizes="280px"
             className="mb-5 h-14 w-auto object-contain"
-            loading="lazy"
           />
         )}
         {eyebrow && (

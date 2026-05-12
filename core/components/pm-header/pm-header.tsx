@@ -27,6 +27,7 @@ import {
   ShoppingCart,
   User,
 } from 'lucide-react';
+import { Image } from '~/components/image';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
 import { PM_MEGA_MENU } from '~/lib/pm-mega-menu';
 import { usePmCategories, usePmMegaMenu } from '~/lib/pm-mega-menu-context';
@@ -312,13 +313,12 @@ export function PmHeader({
                             {card.blurb}
                           </p>
                           {card.imageUrl && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <Image
                               src={card.imageUrl}
                               alt={card.imageAlt ?? card.title}
-                              width={200}
-                              height={120}
-                              loading="lazy"
+                              width={400}
+                              height={240}
+                              sizes="(min-width: 1024px) 280px, 50vw"
                               className="mt-3 h-24 w-full object-contain"
                             />
                           )}
@@ -329,13 +329,12 @@ export function PmHeader({
                             {card.blurb}
                           </p>
                           {card.imageUrl && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <Image
                               src={card.imageUrl}
                               alt={card.imageAlt ?? card.title}
-                              width={96}
-                              height={72}
-                              loading="lazy"
+                              width={192}
+                              height={144}
+                              sizes="96px"
                               className="h-16 w-24 shrink-0 object-contain"
                             />
                           )}
@@ -359,13 +358,12 @@ export function PmHeader({
                           className="flex h-14 items-center justify-center rounded-md border border-pm-ink-200 bg-white p-2 transition-colors hover:border-pm-terracotta"
                         >
                           {brand.logoUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <Image
                               src={brand.logoUrl}
                               alt={brand.name}
-                              width={120}
-                              height={40}
-                              loading="lazy"
+                              width={240}
+                              height={80}
+                              sizes="120px"
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (

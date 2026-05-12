@@ -34,6 +34,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, PackageSearch, Search } from 'lucide-react';
+import { Image } from '~/components/image';
 import type { PmSearchHit } from '~/lib/pm-search';
 
 export interface PmSearchTypeaheadProps {
@@ -284,13 +285,14 @@ export function PmSearchTypeahead({
                     >
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-pm-ink-200 bg-white">
                         {hit.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          // BC CDN urlTemplate — Catalyst <Image> substitutes
+                          // the `{:size}` token per-DPR. Fixed 56px tile.
+                          <Image
                             src={hit.imageUrl}
                             alt={hit.imageAlt}
                             width={56}
                             height={56}
-                            loading="lazy"
+                            sizes="56px"
                             className="h-full w-full object-contain"
                           />
                         ) : (

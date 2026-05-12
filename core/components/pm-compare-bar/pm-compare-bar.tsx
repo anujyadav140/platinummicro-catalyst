@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, ChevronDown, ChevronUp, X, Trash2 } from 'lucide-react';
+import { Image } from '~/components/image';
 import { usePmCompare } from '~/lib/pm-compare-store';
 
 const COMPARE_HREF = '/dev/preview/compare/';
@@ -115,12 +116,13 @@ export function PmCompareBar() {
             >
               <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-sm bg-pm-ink-100">
                 {item.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-                  <img
+                  <Image
                     src={item.imageUrl}
                     alt={item.name}
+                    width={56}
+                    height={56}
+                    sizes="56px"
                     className="max-h-full max-w-full object-contain"
-                    loading="lazy"
                   />
                 ) : (
                   <span className="text-[10px] text-pm-ink-400">No img</span>

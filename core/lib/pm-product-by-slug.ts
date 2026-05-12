@@ -10,10 +10,11 @@
  *     description, related products) than the listing/grid card needs.
  *   - Keeps the listing query small and cache-cheap.
  *
- * Image URLs use the `url(width: N, height: N)` selector (sharp, lossy CDN
- * variant) — same pattern as `lib/pm-products.ts`. We do NOT use
- * `urlTemplate` because we don't need client-side resizing on the detail
- * page; fixed sizes are simpler and play nicely with our placeholder fallback.
+ * Image URLs use BC's `urlTemplate(lossy: true)` aliased to `url` (per the
+ * Catalyst CDN/images guide). The returned URL has a `{:size}` placeholder
+ * that the wrapped `<Image>` component (~/components/image) substitutes per
+ * device width via its CDN loader, so consumers don't need to know the
+ * resize at query time.
  */
 
 import { client } from '~/client';
@@ -88,13 +89,13 @@ const PmProductBySlugQuery = graphql(`
             }
             defaultImage {
               altText
-              url(width: 1000, height: 1000)
+              url: urlTemplate(lossy: true)
             }
             images(first: 8) {
               edges {
                 node {
                   altText
-                  url(width: 1000, height: 1000)
+                  url: urlTemplate(lossy: true)
                   isDefault
                 }
               }
@@ -148,7 +149,7 @@ const PmProductBySlugQuery = graphql(`
                   }
                   defaultImage {
                     altText
-                    url(width: 500, height: 500)
+                    url: urlTemplate(lossy: true)
                   }
                   inventory {
                     isInStock

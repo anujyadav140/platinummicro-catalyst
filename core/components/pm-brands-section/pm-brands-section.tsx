@@ -22,6 +22,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Image } from '~/components/image';
 import type {
   PmBrandConfig,
   PmBrandsSectionConfig,
@@ -286,11 +287,12 @@ function BrandCell({
   basisLg: string;
 }) {
   const inner = brand.logoUrl ? (
-    // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-    <img
+    <Image
       src={brand.logoUrl}
       alt={brand.name}
-      loading="lazy"
+      width={240}
+      height={logoHeight}
+      sizes="240px"
       draggable={false}
       style={{ height: `${logoHeight}px`, width: 'auto' }}
       className="max-w-full object-contain opacity-90 transition-opacity duration-pm-base group-hover:opacity-100"

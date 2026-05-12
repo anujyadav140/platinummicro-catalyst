@@ -16,6 +16,7 @@
 
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { Image } from '~/components/image';
 import { usePmCompare } from '~/lib/pm-compare-store';
 import { usePmQuote } from '~/lib/pm-quote-store';
 import type { PmProduct } from '~/lib/pm-products';
@@ -74,14 +75,17 @@ export function PmProductCard({ product }: PmProductCardProps) {
       {/* Image */}
       <div className="relative flex h-[160px] items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
         {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet
-          <img
+          // BC CDN image — uses Catalyst <Image> wrapper which applies
+          // `bcCdnImageLoader` to substitute `{:size}` in the BC urlTemplate
+          // with the per-device-width param. Sizes hint matches the 4-col
+          // grid at desktop (25vw), 3-col tablet (33vw), 2-col mobile (50vw).
+          <Image
             src={product.imageUrl}
             alt={product.imageAlt ?? product.name}
-            width={160}
-            height={160}
+            width={500}
+            height={500}
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
             className="max-h-full max-w-full object-contain"
-            loading="lazy"
           />
         ) : (
           <span className="rounded-sm border border-dashed border-pm-ink-300 bg-white px-2.5 py-1.5 text-[11px] text-pm-ink-400">

@@ -17,6 +17,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Image } from '~/components/image';
 import {
   ArrowLeft,
   Check,
@@ -144,10 +145,12 @@ export function ListDetail({ listId }: { listId: string }) {
                 {/* Thumbnail */}
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
                   {item.imageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element -- BC CDN, no remote-domain config yet */
-                    <img
+                    <Image
                       src={item.imageUrl}
                       alt=""
+                      width={64}
+                      height={64}
+                      sizes="64px"
                       className="h-full w-full object-contain p-1"
                     />
                   ) : (

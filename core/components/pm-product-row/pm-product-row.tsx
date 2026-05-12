@@ -24,6 +24,7 @@
 
 import Link from 'next/link';
 import { Plus, Star } from 'lucide-react';
+import { Image } from '~/components/image';
 import { PmAddToListButton } from '~/components/pm-add-to-list-menu';
 import { usePmCompare } from '~/lib/pm-compare-store';
 import { usePmQuote } from '~/lib/pm-quote-store';
@@ -93,12 +94,16 @@ export function PmProductRow({ product }: PmProductRowProps) {
       {/* Image */}
       <div className="relative z-10 flex h-[160px] w-[160px] flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100 pointer-events-none">
         {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet
-          <img
+          // BC CDN image — Catalyst <Image> wrapper substitutes `{:size}`
+          // in the BC urlTemplate per-device-width. Fixed 160px tile so
+          // sizes hint is constant (responsive srcset still emitted for DPR).
+          <Image
             src={product.imageUrl}
             alt={product.imageAlt ?? product.name}
+            width={160}
+            height={160}
+            sizes="160px"
             className="max-h-full max-w-full object-contain"
-            loading="lazy"
           />
         ) : (
           <span className="rounded-sm border border-dashed border-pm-ink-300 bg-white px-2.5 py-1.5 text-[11px] text-pm-ink-400">

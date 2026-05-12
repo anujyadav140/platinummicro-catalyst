@@ -221,7 +221,7 @@ const PmCategoryProductsQuery = graphql(`
             path
             description
             defaultImage {
-              url(width: 1920, height: 720)
+              url: urlTemplate(lossy: true)
               altText
             }
             products(first: 50) {
@@ -236,7 +236,7 @@ const PmCategoryProductsQuery = graphql(`
                   }
                   defaultImage {
                     altText
-                    url(width: 500, height: 500)
+                    url: urlTemplate(lossy: true)
                   }
                   inventory {
                     isInStock

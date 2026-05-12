@@ -76,7 +76,7 @@ const PmCategoryDetailsQuery = graphql(`
         description
         defaultImage {
           altText
-          url(width: 240, height: 180)
+          url: urlTemplate(lossy: true)
         }
       }
     }

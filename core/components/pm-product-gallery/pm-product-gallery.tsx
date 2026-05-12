@@ -28,6 +28,7 @@
 
 import { useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import { Image } from '~/components/image';
 import type { PmProductImage } from '~/lib/pm-product-by-slug';
 
 export interface PmProductGalleryProps {
@@ -103,10 +104,14 @@ export function PmProductGallery({
                     : 'border-pm-ink-200 hover:border-pm-ink-400'
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet */}
-                <img
+                {/* Thumbnail — fixed 62px tile, urlTemplate gets size param
+                    via the Catalyst <Image> wrapper. */}
+                <Image
                   src={image.url}
                   alt=""
+                  width={62}
+                  height={62}
+                  sizes="62px"
                   className="max-h-full max-w-full object-contain p-1.5"
                 />
               </button>
@@ -124,10 +129,16 @@ export function PmProductGallery({
         className="relative flex aspect-square w-full flex-1 items-center justify-center overflow-hidden rounded-md border border-pm-ink-200 bg-white"
         style={{ cursor: zoomActive ? 'zoom-out' : 'zoom-in' }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- BC CDN images, no remote-domain config yet */}
-        <img
+        {/* Main image — large width=800 gives the loader headroom for the
+            2× hover zoom while still letting it request a smaller variant
+            on small screens via `sizes`. */}
+        <Image
           src={active.url}
           alt={active.altText || productName}
+          width={800}
+          height={800}
+          sizes="(min-width: 768px) 405px, 90vw"
+          priority
           className="h-full w-full object-contain p-5 transition-transform duration-150 ease-out"
           style={{
             transform: zoomActive ? `scale(${ZOOM_SCALE})` : 'scale(1)',

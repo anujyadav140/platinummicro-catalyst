@@ -13,6 +13,7 @@
  */
 
 import Link from 'next/link';
+import { Image } from '~/components/image';
 import {
   ArrowUpRight,
   Building2,
@@ -294,12 +295,13 @@ function PmCard({
     >
       {/* Visual: image takes precedence; otherwise icon tile; otherwise nothing. */}
       {card.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-        <img
+        <Image
           src={card.imageUrl}
           alt=""
+          width={96}
+          height={96}
+          sizes="48px"
           className={`h-12 w-12 object-contain ${isCentered ? 'mx-auto' : ''}`}
-          loading="lazy"
         />
       ) : Icon ? (
         <div

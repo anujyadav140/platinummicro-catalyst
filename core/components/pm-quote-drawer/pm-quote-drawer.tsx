@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react';
 import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { Image } from '~/components/image';
 import { PmCouponInput } from '~/components/pm-coupon-input';
 import { usePmQuote } from '~/lib/pm-quote-store';
 
@@ -89,10 +90,12 @@ export function PmQuoteDrawer() {
                   {/* Thumbnail */}
                   <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
                     {line.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- small thumbnail, no need for next/image
-                      <img
+                      <Image
                         src={line.imageUrl}
                         alt=""
+                        width={56}
+                        height={56}
+                        sizes="56px"
                         className="h-full w-full object-contain"
                       />
                     ) : (

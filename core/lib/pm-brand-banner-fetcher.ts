@@ -62,7 +62,7 @@ const PmBrandBannerCategoryQuery = graphql(`
       category(entityId: $entityId) {
         description
         defaultImage {
-          url(width: 1920, height: 720)
+          url: urlTemplate(lossy: true)
         }
       }
     }

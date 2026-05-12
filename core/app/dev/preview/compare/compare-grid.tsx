@@ -22,6 +22,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowUp, Plus, X } from 'lucide-react';
+import { Image } from '~/components/image';
 import { usePmCompare, type PmCompareItem } from '~/lib/pm-compare-store';
 import { usePmQuote } from '~/lib/pm-quote-store';
 
@@ -108,12 +109,13 @@ function CompareProductCard({
         aria-label={`View ${item.name}`}
       >
         {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- BC CDN images
-          <img
+          <Image
             src={item.imageUrl}
             alt={item.name}
+            width={280}
+            height={280}
+            sizes="(min-width: 1024px) 240px, 40vw"
             className="max-h-full max-w-full object-contain"
-            loading="lazy"
           />
         ) : (
           <span className="rounded-sm border border-dashed border-pm-ink-300 bg-white px-2.5 py-1.5 text-[11px] text-pm-ink-400">

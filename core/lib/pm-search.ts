@@ -68,7 +68,7 @@ const PmSearchQuery = graphql(`
                 }
                 defaultImage {
                   altText
-                  url(width: 96, height: 96)
+                  url: urlTemplate(lossy: true)
                 }
                 inventory {
                   isInStock
@@ -170,7 +170,7 @@ const PmSearchListingQuery = graphql(`
                 }
                 defaultImage {
                   altText
-                  url(width: 320, height: 320)
+                  url: urlTemplate(lossy: true)
                 }
                 inventory {
                   isInStock
@@ -264,7 +264,7 @@ const PmBrandListingQuery = graphql(`
                 }
                 defaultImage {
                   altText
-                  url(width: 320, height: 320)
+                  url: urlTemplate(lossy: true)
                 }
                 inventory {
                   isInStock

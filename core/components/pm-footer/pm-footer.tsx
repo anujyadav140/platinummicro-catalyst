@@ -22,6 +22,7 @@
  */
 
 import Link from 'next/link';
+import { Image } from '~/components/image';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
 import {
   usePmCategories,
@@ -248,10 +249,12 @@ export function PmFooter({
           {/* Brand block */}
           <div>
             <span className="mb-3.5 inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={logoUrl}
                 alt="Platinum Micro"
+                width={320}
+                height={96}
+                sizes="320px"
                 style={{ height: logoHeight, width: 'auto', display: 'block' }}
               />
             </span>
