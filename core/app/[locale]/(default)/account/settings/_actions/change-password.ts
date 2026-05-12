@@ -60,6 +60,10 @@ export const changePassword: ChangePasswordAction = async (prevState, formData) 
         input,
       },
       customerAccessToken,
+      // Customer-scoped mutation — Catalyst sessions guide requires `no-store`
+      // whenever `customerAccessToken` is in play so anonymous shoppers can
+      // never receive a cached personalized response.
+      fetchOptions: { cache: 'no-store' },
     });
 
     const result = response.data.customer.changePassword;
