@@ -23,6 +23,7 @@
  * starts with `/brand` are excluded from the menu.
  */
 
+import { unstable_cache } from 'next/cache';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
 import {
@@ -33,10 +34,15 @@ import {
   type PmMegaMenu,
 } from '~/lib/pm-mega-menu';
 
-// First pass: pulls the category tree (3 levels) AND the top brands. BC's
-// `CategoryTreeItem` is a slim type — it doesn't expose `description` or
-// `defaultImage`. Those come from the full `Category` type, fetched per
-// child entityId in `fetchCategoryDetails` below.
+// First pass: pulls the category tree (3 levels). BC's `CategoryTreeItem`
+// is a slim type — it doesn't expose `description` or `defaultImage`.
+// Those come from the full `Category` type, fetched per child entityId in
+// `fetchCategoryDetails` below.
+//
+// Brands for the mega-menu partner rail are now driven by a curated
+// BC category ("Mega Menu Brands" under BRAND). The admin adds/removes/
+// reorders subcategories there to control which brands appear in every
+// mega-menu panel — no code change required.
 const PmMegaMenuQuery = graphql(`
   query PmMegaMenuQuery {
     site {
@@ -52,19 +58,6 @@ const PmMegaMenuQuery = graphql(`
             entityId
             name
             path
-          }
-        }
-      }
-      brands(first: 8) {
-        edges {
-          node {
-            entityId
-            name
-            path
-            defaultImage {
-              altText
-              url(width: 160, height: 80)
-            }
           }
         }
       }
@@ -88,6 +81,73 @@ const PmCategoryDetailsQuery = graphql(`
     }
   }
 `);
+
+// Lookup table of BC brand entity IDs by name. Used to resolve the
+// alias list stored in each "Mega Menu Brands" child category's
+// description (e.g. "Hewlett Packard Enterprise, HPE, HPE Networking
+// Instant On") into the integer IDs that `searchProducts(filters:
+// { brandEntityIds: ... })` accepts.
+//
+// BC caps `first` at 50 on the brands collection, so we paginate
+// via `after` cursors. Up to a few hundred brands resolve in 2-4
+// round-trips. Cached for 60s with the rest of the mega-menu fetch.
+const PmBrandsPageQuery = graphql(`
+  query PmBrandsPageQuery($after: String) {
+    site {
+      brands(first: 50, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            entityId
+            name
+          }
+        }
+      }
+    }
+  }
+`);
+
+/**
+ * Walk BC's paginated brand collection and return a lowercase
+ * name → entityId map. unstable_cache wraps this so the 2-4 round-trip
+ * pagination only happens once per cache window across the whole app,
+ * regardless of how many pages render the mega-menu.
+ *
+ * Returns a plain object (not Map) because unstable_cache serialises
+ * its return values via JSON.
+ */
+const cachedAllBrandIdsByName = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    const out: Record<string, number> = {};
+    let cursor: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const { data } = await client.fetch({
+        document: PmBrandsPageQuery,
+        variables: { after: cursor },
+        fetchOptions: { next: { revalidate: 60 } },
+      });
+      const collection = data?.site?.brands;
+      for (const edge of collection?.edges ?? []) {
+        const node = edge?.node;
+        if (node) out[node.name.toLowerCase()] = node.entityId;
+      }
+      if (!collection?.pageInfo?.hasNextPage) break;
+      cursor = collection.pageInfo.endCursor ?? undefined;
+      if (!cursor) break;
+    }
+    return out;
+  },
+  ['pm-mega-menu-brand-ids'],
+  { revalidate: 120, tags: ['pm-mega-menu'] },
+);
+
+async function fetchAllBrandIdsByName(): Promise<Map<string, number>> {
+  const obj = await cachedAllBrandIdsByName();
+  return new Map(Object.entries(obj));
+}
 
 interface CategoryDetails {
   description: string;
@@ -164,6 +224,40 @@ function isBrandTree(top: { name: string; path: string }): boolean {
   const n = top.name.toLowerCase();
   if (n === 'brand' || n === 'brands') return true;
   return top.path.toLowerCase().startsWith('/brand');
+}
+
+/**
+ * Hide admin-only BC categories from the customer-facing mega menu.
+ *
+ * Convention: top-level BC categories whose name starts with `"PM "`
+ * (capital P-M-space) are admin storage folders for banner / footer
+ * config and MUST NOT appear as menu entries. Kept in sync with the
+ * matching helper in `pm-categories-fetcher.ts`.
+ *
+ * Centralizing this rule in the fetcher means every downstream consumer
+ * of `fetchPmMegaMenu()` (header dropdown, future facet rails, etc.)
+ * automatically gets the same exclusion.
+ */
+function isAdminFolder(top: { name: string }): boolean {
+  return top.name.startsWith('PM ');
+}
+
+/**
+ * Compact display label for the brand-listing page heading. Maps verbose
+ * brand names ("Hewlett Packard Enterprise") to short acronyms ("HPE")
+ * the buyer recognises. Unmapped names pass through unchanged.
+ *
+ * Kept in sync with the BRAND_SHORT_LABEL map in pm-header.tsx — when a
+ * brand name needs a friendly short form, add it in both places.
+ */
+const SHORT_HEADINGS: Record<string, string> = {
+  'Hewlett Packard Enterprise': 'HPE',
+  'HPE Networking Instant On': 'HPE Networking',
+  'Western Digital': 'WD',
+  'ASRock Rack': 'ASRock Rack',
+};
+function shortHeadingFor(name: string): string {
+  return SHORT_HEADINGS[name] ?? name;
 }
 
 /**
@@ -277,26 +371,92 @@ export async function fetchPmMegaMenu(): Promise<PmMegaMenuMap> {
     const tree = data?.site?.categoryTree ?? [];
     const menu: PmMegaMenuMap = {};
 
-    // Brand rail — BC's top-level Brands collection. Used as the right
-    // rail across all category panels; if the team wants per-category
-    // brand filtering later, swap to `category.products.collectionInfo
-    // .productResults.brands` or similar (phase 2).
-    const brandEdges = data?.site?.brands?.edges ?? [];
-    const brands: PmMegaBrand[] = brandEdges
-      .map((edge) => edge?.node)
-      .filter((n): n is NonNullable<typeof n> => n != null)
-      .map((n) => ({
-        name: n.name,
-        href: n.path ?? '#',
-        logoUrl: n.defaultImage?.url,
-      }));
+    // ── Partner brands rail (BC-driven) ─────────────────────────────
+    // Walk the category tree to find the "Mega Menu Brands" category
+    // under the BRAND top-level. Its direct children are the curated
+    // enterprise brands the admin chose to feature in the mega-menu.
+    //
+    // Each curated brand's `description` field stores the comma-
+    // separated list of BC brand names that should be combined when
+    // the chip is clicked (the "alias list"). Example:
+    //   Hewlett Packard Enterprise → "Hewlett Packard Enterprise, HPE,
+    //   HPE Networking Instant On"
+    //
+    // We resolve those names to BC brand entityIds and link the chip
+    // to `/dev/preview/search?bids=39,40,41&heading=HPE`, which the
+    // search page renders by combining products across all the listed
+    // brands.
+    //
+    // To update brands or aliases: BC admin → Categories → BRAND →
+    // Mega Menu Brands → edit a subcategory's name or description.
+    const brands: PmMegaBrand[] = [];
 
-    // Collect every direct-child entityId across all (non-brand) top-levels
-    // so we can fetch the full Category data (description + defaultImage)
-    // in a single Promise.all batch. ~10-30 calls in practice; cached 60s.
+    // Step 1: Find every "Mega Menu Brands" subtree node and its
+    // children (the curated brands). We do this before fetching
+    // details so we can batch the description fetches.
+    const curatedBrandTreeItems: Array<{ entityId: number; name: string }> = [];
+    for (const top of tree) {
+      if (!isBrandTree(top)) continue;
+      for (const child of top.children ?? []) {
+        const childName = child.name.toLowerCase();
+        if (childName !== 'mega menu brands' && childName !== 'mega-menu-brands') continue;
+        for (const brand of child.children ?? []) {
+          curatedBrandTreeItems.push({ entityId: brand.entityId, name: brand.name });
+        }
+        break;
+      }
+      break; // only one BRAND top-level
+    }
+
+    if (curatedBrandTreeItems.length > 0) {
+      // Step 2: Fetch descriptions for each curated brand (the alias
+      // list) AND the global brand catalog (for name → entityId
+      // resolution). Both queries are issued in parallel.
+      const [curatedDetailsMap, brandIdByName] = await Promise.all([
+        fetchCategoryDetails(curatedBrandTreeItems.map((b) => b.entityId)),
+        fetchAllBrandIdsByName(),
+      ]);
+
+      // Step 3: For each curated brand, parse aliases from the
+      // description, resolve to BC brand IDs, build the href.
+      for (const item of curatedBrandTreeItems) {
+        const desc = curatedDetailsMap.get(item.entityId)?.description ?? '';
+        // Strip the <!--pm-hero ... --> banner block before parsing
+        // aliases so the banner config keys aren't mistaken for brand
+        // alias names. Then strip remaining HTML tags before splitting.
+        const cleanDesc = desc
+          .replace(/<!--\s*pm-hero\b[\s\S]*?-->/i, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/g, ' ');
+        // Alias list = comma-separated brand names. Falls back to the
+        // category name itself if the description is empty.
+        const aliasNames = cleanDesc
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const effectiveAliases = aliasNames.length > 0 ? aliasNames : [item.name];
+
+        const brandIds = effectiveAliases
+          .map((n) => brandIdByName.get(n.toLowerCase()))
+          .filter((id): id is number => typeof id === 'number');
+
+        const heading = shortHeadingFor(item.name);
+        const href = brandIds.length > 0
+          ? `/dev/preview/search?bids=${brandIds.join(',')}&heading=${encodeURIComponent(heading)}`
+          : `/dev/preview/search?q=${encodeURIComponent(item.name)}`;
+
+        brands.push({ name: item.name, href });
+      }
+    }
+
+    // Collect every direct-child entityId across all (non-brand,
+    // non-admin) top-levels so we can fetch the full Category data
+    // (description + defaultImage) in a single Promise.all batch.
+    // ~10-30 calls in practice; cached 60s.
     const childEntityIds: number[] = [];
     for (const top of tree) {
       if (isBrandTree(top)) continue;
+      if (isAdminFolder(top)) continue;
       for (const child of top.children ?? []) {
         childEntityIds.push(child.entityId);
       }
@@ -305,6 +465,7 @@ export async function fetchPmMegaMenu(): Promise<PmMegaMenuMap> {
 
     for (const top of tree) {
       if (isBrandTree(top)) continue;
+      if (isAdminFolder(top)) continue;
       const slug = leafSlug(top.path);
       if (!slug) continue;
 

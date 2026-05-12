@@ -1,11 +1,14 @@
-import { fetchPmSearchListing } from '~/lib/pm-search';
+import { fetchPmBrandListing, fetchPmSearchListing } from '~/lib/pm-search';
 import {
   buildBrandFacet,
   PM_CATEGORY_PAGE_SIZES,
   type PmAvailability,
   type PmCategorySort,
 } from '~/lib/pm-category-by-slug';
+import { fetchPmBrandBanner } from '~/lib/pm-brand-banner-fetcher';
+import { fetchPmPageBanner } from '~/lib/pm-page-banner-fetcher';
 import { PmCategoryListing } from '~/components/pm-category-listing';
+import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
 import type { PmViewMode } from '~/components/pm-view-toggle';
 
 export const dynamic = 'force-dynamic';
@@ -76,6 +79,16 @@ function parseView(raw: string | undefined): PmViewMode {
   return raw === 'list' ? 'list' : 'grid';
 }
 
+/** Parse `?bids=39,40,41` into a deduped array of positive ints. */
+function parseBrandIds(raw: string | undefined): number[] {
+  if (!raw) return [];
+  const ids = raw
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return [...new Set(ids)];
+}
+
 export default async function SearchResultsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const rawQuery = firstString(sp.q)?.trim() ?? '';
@@ -94,7 +107,14 @@ export default async function SearchResultsPage({ searchParams }: PageProps) {
   const pageSize = parsePerPage(firstString(sp.perPage));
   const viewMode = parseView(firstString(sp.view));
 
-  const listing = await fetchPmSearchListing(rawQuery, {
+  // Brand-listing mode (used by the mega-menu partner-brand chips):
+  // when `?bids=` is set, fetch products across the listed BC brand
+  // IDs instead of running a search-term query. `heading` controls
+  // the page title (e.g. "HPE" instead of `Results for "..."`).
+  const brandIds = parseBrandIds(firstString(sp.bids));
+  const heading = firstString(sp.heading)?.trim() ?? '';
+
+  const filters = {
     sort,
     brands,
     categories,
@@ -107,21 +127,39 @@ export default async function SearchResultsPage({ searchParams }: PageProps) {
     minRating,
     page,
     pageSize,
-  });
+  };
+
+  // Brand-mode → fetch sections from the matching "Mega Menu Brands"
+  // subcategory description. Plain-search mode → fetch sections from
+  // the "PM Page Banners → search" config category. Both return an
+  // ordered list of sections (heroes + card grids), and the renderer
+  // dispatches on section.kind.
+  const isBrandMode = brandIds.length > 0;
+  const [listing, sections] = await Promise.all([
+    isBrandMode
+      ? fetchPmBrandListing(brandIds, heading || 'Brand', filters)
+      : fetchPmSearchListing(rawQuery, filters),
+    isBrandMode
+      ? fetchPmBrandBanner(heading || 'Brand')
+      : fetchPmPageBanner('search'),
+  ]);
 
   const brandFacet = buildBrandFacet(listing.allProducts);
 
   return (
-    <PmCategoryListing
-      category={listing.category}
-      products={listing.pageProducts}
-      brands={brandFacet}
-      totalCount={listing.totalAfterFilters}
-      currentPage={listing.currentPage}
-      totalPages={listing.totalPages}
-      pageSize={listing.pageSize}
-      viewMode={viewMode}
-      priceSliderMax={listing.priceSliderMax}
-    />
+    <>
+      <PmPageSectionsRenderer sections={sections} />
+      <PmCategoryListing
+        category={listing.category}
+        products={listing.pageProducts}
+        brands={brandFacet}
+        totalCount={listing.totalAfterFilters}
+        currentPage={listing.currentPage}
+        totalPages={listing.totalPages}
+        pageSize={listing.pageSize}
+        viewMode={viewMode}
+        priceSliderMax={listing.priceSliderMax}
+      />
+    </>
   );
 }

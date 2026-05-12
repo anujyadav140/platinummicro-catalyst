@@ -96,10 +96,34 @@ export function PmHeader({
     closeTimer.current = setTimeout(() => setOpenKey(null), HOVER_CLOSE_DELAY);
   };
 
+  // Close right now — clears any pending open/close timer so a stale
+  // scheduleOpen can't fire and re-open the menu after we've decided to
+  // close. Used by Escape and by hovering a nav item that has no mega.
+  const closeNow = () => {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpenKey(null);
+  };
+
+  // Cancel an in-flight close (used when the mouse re-enters the panel
+  // during the grace window).
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+
   // Esc closes immediately
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenKey(null);
+      if (e.key === 'Escape') closeNow();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -194,7 +218,7 @@ export function PmHeader({
       <div className="relative bg-pm-navy-deep border-t border-white/5">
         <nav
           aria-label="Primary"
-          className="mx-auto flex max-w-pm-container items-center gap-1 px-8"
+          className="mx-auto flex max-w-pm-container items-center justify-center gap-1 px-8"
           style={{ height: 'var(--pm-header-nav-h)' }}
         >
           {categories.map((cat) => {
@@ -206,10 +230,22 @@ export function PmHeader({
               <Link
                 key={cat.key}
                 href={cat.href}
-                onMouseEnter={() => (hasMega ? scheduleOpen(cat.key) : setOpenKey(null))}
+                // Hover state machine wiring:
+                //   - Enter a nav item → schedule open (if it has a mega)
+                //     OR immediately clear any open panel (if it doesn't,
+                //     so dropping into a non-mega item closes whatever was
+                //     showing without a stale dropdown lingering).
+                //   - Leave a nav item → schedule close with grace. If the
+                //     mouse continues into the panel within ~120ms, the
+                //     panel's onMouseEnter cancels this timer. If it lands
+                //     on a different nav item, that link's onMouseEnter
+                //     also cancels (scheduleOpen / setOpenKey both clear
+                //     the close timer).
+                onMouseEnter={() => (hasMega ? scheduleOpen(cat.key) : closeNow())}
+                onMouseLeave={scheduleClose}
                 aria-haspopup={hasMega ? 'true' : undefined}
                 aria-expanded={hasMega ? isOpen : undefined}
-                className={`inline-flex items-center gap-1.5 rounded-md px-4 py-3 text-sm font-medium transition-all duration-[120ms] ease-pm-standard ${
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-3 text-sm font-medium transition-all duration-[120ms] ease-pm-standard ${
                   isOpen
                     ? 'bg-white/10 text-white'
                     : 'text-white/85 hover:bg-white/10 hover:text-white'
@@ -234,12 +270,11 @@ export function PmHeader({
         {activeMega && (
           <div
             className="absolute inset-x-0 top-full z-40 border-t border-pm-ink-200 bg-white text-pm-ink-900 shadow-lg"
-            onMouseEnter={() => {
-              if (closeTimer.current) {
-                clearTimeout(closeTimer.current);
-                closeTimer.current = null;
-              }
-            }}
+            // Entering the panel during the close-grace window cancels the
+            // close so the panel stays open while the mouse is over it.
+            onMouseEnter={cancelClose}
+            // Leaving the panel reschedules a close with the same grace —
+            // gives the user a moment to slip back in if they overshoot.
             onMouseLeave={scheduleClose}
           >
             {activeMega.cards && activeMega.cards.length > 0 ? (

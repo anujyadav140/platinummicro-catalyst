@@ -93,6 +93,25 @@ export default async (): Promise<NextConfig> => {
     },
     // default URL generation in BigCommerce uses trailing slash
     trailingSlash: process.env.TRAILING_SLASH !== 'false',
+    // Redirect bare root (and the default Catalyst locale prefix) into the
+    // PM storefront so visitors never land on the stock Catalyst pages (which
+    // can link out to the BC Stencil theme).
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async redirects() {
+      return [
+        {
+          source: '/',
+          destination: '/dev/preview/',
+          permanent: false,
+        },
+        // Catch the locale-prefixed root too (e.g. /en/)
+        {
+          source: '/en',
+          destination: '/dev/preview/',
+          permanent: false,
+        },
+      ];
+    },
     // eslint-disable-next-line @typescript-eslint/require-await
     async headers() {
       const cdnLinks = settings.urls.cdnUrls.map((url) => ({

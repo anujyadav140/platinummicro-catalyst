@@ -61,6 +61,29 @@ function isBrandTree(top: { name: string; path: string }): boolean {
   return top.path.toLowerCase().startsWith('/brand');
 }
 
+/**
+ * Hide admin-only BC categories from the customer-facing nav.
+ *
+ * Convention: top-level BC categories whose name starts with `"PM "`
+ * (capital P-M-space) are treated as admin storage folders — they hold
+ * configuration content (banner copy, footer settings, etc.) and must
+ * never surface in the nav rail, mega menu, homepage strip, footer, or
+ * sitemap.
+ *
+ * Examples currently in BC:
+ *   - "PM Page Banners" (parent for hero banner copy)
+ *   - "PM Home Page Banners"
+ *   - "PM Search Page Banners"
+ *   - "PM Footer" (parsed for footer config overrides)
+ *
+ * The filter is intentionally exact-prefix ("PM " with the trailing space)
+ * so legitimate names that happen to begin with "PM" (e.g. "PMP devices")
+ * won't be accidentally hidden.
+ */
+function isAdminFolder(top: { name: string }): boolean {
+  return top.name.startsWith('PM ');
+}
+
 export async function fetchPmCategories(): Promise<PmCategory[]> {
   try {
     const { data } = await client.fetch({
@@ -73,6 +96,7 @@ export async function fetchPmCategories(): Promise<PmCategory[]> {
 
     for (const top of tree) {
       if (isBrandTree(top)) continue;
+      if (isAdminFolder(top)) continue;
       const slug = leafSlug(top.path);
       if (!slug) continue;
 

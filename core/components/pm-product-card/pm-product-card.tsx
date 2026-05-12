@@ -16,6 +16,7 @@
 
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { usePmCompare } from '~/lib/pm-compare-store';
 import { usePmQuote } from '~/lib/pm-quote-store';
 import type { PmProduct } from '~/lib/pm-products';
 
@@ -25,6 +26,11 @@ export interface PmProductCardProps {
 
 export function PmProductCard({ product }: PmProductCardProps) {
   const { addLines, open } = usePmQuote();
+  const { toggle: toggleCompare, isInCompare } = usePmCompare();
+  // Use BC entity ID (always unique) for compare lookup — keying by SKU
+  // breaks when the catalog has duplicate-SKU listings (both cards then
+  // share one toggle state).
+  const checked = isInCompare(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     // Stop the click from bubbling up to the parent <Link> (whole-card nav)
@@ -41,6 +47,22 @@ export function PmProductCard({ product }: PmProductCardProps) {
       },
     ]);
     open();
+  };
+
+  const handleCompareToggle = (e: React.MouseEvent) => {
+    // Same propagation kill as Add — the card surface is a <Link>.
+    e.preventDefault();
+    e.stopPropagation();
+    toggleCompare({
+      id: product.id,
+      sku: product.sku,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      brand: product.brand,
+      priceLabel: product.priceLabel,
+      href: product.href,
+      inStock: product.inStock,
+    });
   };
 
   return (
@@ -115,6 +137,46 @@ export function PmProductCard({ product }: PmProductCardProps) {
           Add
         </button>
       </div>
+
+      {/* Compare toggle — bottom-left affordance. Uses role=checkbox on a
+          <span> wrapper so the parent <Link> doesn't nest interactive
+          elements; the actual click handler kills propagation. */}
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        aria-label={
+          checked
+            ? `Remove ${product.name} from compare`
+            : `Add ${product.name} to compare`
+        }
+        onClick={handleCompareToggle}
+        className="-mt-1 inline-flex w-fit items-center gap-1.5 self-start rounded-sm py-0.5 text-[11px] font-medium text-pm-ink-500 transition-colors hover:text-pm-navy-deep"
+      >
+        <span
+          aria-hidden
+          className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-sm border transition-colors ${
+            checked
+              ? 'border-pm-navy-deep bg-pm-navy-deep text-white'
+              : 'border-pm-ink-300 bg-white'
+          }`}
+        >
+          {checked ? (
+            <svg
+              viewBox="0 0 12 12"
+              className="h-2.5 w-2.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="2.5 6.5 5 9 9.5 3.5" />
+            </svg>
+          ) : null}
+        </span>
+        Compare
+      </button>
     </Link>
   );
 }

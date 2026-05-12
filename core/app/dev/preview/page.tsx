@@ -5,9 +5,16 @@
  * passes it to the client shell. If the BC fetch fails (no token, channel
  * mismatch, network issue), we fall back to an empty list so the rest of the
  * design still renders — failures here should never break the design surface.
+ *
+ * Also fetches the homepage hero banner from the BC "PM Page Banners →
+ * homepage" config category. When the admin hasn't configured a banner
+ * (no `<!--pm-hero ... -->` block in the description), `heroBanner` is
+ * null and the page renders with no hero at all (we no longer have a
+ * hardcoded hero fallback — see PreviewShell).
  */
 
 import { fetchPmFeaturedProducts, type PmProduct } from '~/lib/pm-products';
+import { fetchPmPageBanner } from '~/lib/pm-page-banner-fetcher';
 import { getPmSessionCustomer } from '~/lib/pm-session-server';
 import { PreviewShell } from './preview-shell';
 
@@ -22,11 +29,20 @@ async function safeFetch(): Promise<PmProduct[]> {
 }
 
 export default async function PreviewPage() {
-  // Fetch products and the signed-in customer in parallel.
-  const [products, customer] = await Promise.all([
+  // Fetch products, customer, and the admin-managed homepage banner in
+  // parallel — none of these depend on each other so a single Promise.all
+  // keeps the TTFB tight.
+  const [products, customer, sections] = await Promise.all([
     safeFetch(),
     getPmSessionCustomer(),
+    fetchPmPageBanner('homepage'),
   ]);
 
-  return <PreviewShell products={products} customer={customer} />;
+  return (
+    <PreviewShell
+      products={products}
+      customer={customer}
+      sections={sections}
+    />
+  );
 }

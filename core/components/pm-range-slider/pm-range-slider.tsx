@@ -5,8 +5,11 @@
  * -------------
  * Dual-handle price range slider. Two `<input type="range">` elements stacked
  * over the same track — the visual track + filled segment + thumbs are styled
- * via Tailwind utilities and a small inline `<style>` block for pseudo-element
- * thumb styling (no styled-jsx plugin required).
+ * via Tailwind utilities and a single global `<style>` block (rendered once at
+ * module level via a static class — `.pm-range-input` — so the markup is
+ * deterministic between SSR and hydration; using `useId()` for the scope
+ * class caused intermittent hydration mismatches because the generated ID
+ * depended on tree position).
  *
  * Controlled — parent owns `[low, high]` state, slider just dispatches.
  *
@@ -14,8 +17,6 @@
  * track receives clicks; their `::thumb` pseudo-elements get
  * `pointer-events: auto` so users can still grab and drag.
  */
-
-import { useId } from 'react';
 
 export interface PmRangeSliderProps {
   /** Lower bound of the slider range */
@@ -44,7 +45,6 @@ export function PmRangeSlider({
   ariaPrefix = 'Range',
 }: PmRangeSliderProps) {
   const [low, high] = value;
-  const uid = useId();
 
   const range = max - min;
   const lowPct = range > 0 ? ((low - min) / range) * 100 : 0;
@@ -60,7 +60,7 @@ export function PmRangeSlider({
   };
 
   return (
-    <div className={uid}>
+    <div>
       {/* Readout: current low — high values */}
       <div className="mb-3 flex items-center justify-between text-[14px] font-semibold text-pm-ink-900">
         <span>{formatLabel(low)}</span>
@@ -102,39 +102,57 @@ export function PmRangeSlider({
         />
       </div>
 
-      {/* Pseudo-element thumb styling — global selector limited by the
-          unique class on the wrapper above, so this doesn't bleed beyond
-          this slider instance. */}
-      <style>{`
-        .${uid} .pm-range-input { pointer-events: none; }
-        .${uid} .pm-range-input::-webkit-slider-thumb {
-          appearance: none;
-          pointer-events: auto;
-          width: 18px;
-          height: 18px;
-          border-radius: 9999px;
-          background: white;
-          border: 2px solid var(--pm-terracotta);
-          cursor: grab;
-          box-shadow: 0 1px 3px rgba(7, 21, 37, 0.15);
-        }
-        .${uid} .pm-range-input::-webkit-slider-thumb:active { cursor: grabbing; }
-        .${uid} .pm-range-input::-moz-range-thumb {
-          appearance: none;
-          pointer-events: auto;
-          width: 18px;
-          height: 18px;
-          border-radius: 9999px;
-          background: white;
-          border: 2px solid var(--pm-terracotta);
-          cursor: grab;
-          box-shadow: 0 1px 3px rgba(7, 21, 37, 0.15);
-        }
-        .${uid} .pm-range-input::-moz-range-thumb:active { cursor: grabbing; }
-        .${uid} .pm-range-input::-moz-range-track {
-          background: transparent;
-        }
-      `}</style>
     </div>
+  );
+}
+
+/**
+ * PmRangeSliderStyles
+ * -------------------
+ * Static global styles for all <PmRangeSlider> instances. Rendered once
+ * (typically in a layout) so the inline <style> markup is byte-identical
+ * between SSR and hydration — avoiding the useId-based scoping that caused
+ * hydration mismatches when the React tree shifted.
+ *
+ * All sliders share the same thumb styling, so a single global definition
+ * is sufficient.
+ */
+export function PmRangeSliderStyles() {
+  return (
+    <style
+      // eslint-disable-next-line react/no-danger -- static literal, no user input
+      dangerouslySetInnerHTML={{
+        __html: `
+          .pm-range-input { pointer-events: none; }
+          .pm-range-input::-webkit-slider-thumb {
+            appearance: none;
+            pointer-events: auto;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: white;
+            border: 2px solid var(--pm-terracotta);
+            cursor: grab;
+            box-shadow: 0 1px 3px rgba(7, 21, 37, 0.15);
+          }
+          .pm-range-input::-webkit-slider-thumb:active { cursor: grabbing; }
+          .pm-range-input::-moz-range-thumb {
+            appearance: none;
+            pointer-events: auto;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: white;
+            border: 2px solid var(--pm-terracotta);
+            cursor: grab;
+            box-shadow: 0 1px 3px rgba(7, 21, 37, 0.15);
+          }
+          .pm-range-input::-moz-range-thumb:active { cursor: grabbing; }
+          .pm-range-input::-moz-range-track {
+            background: transparent;
+          }
+        `,
+      }}
+    />
   );
 }

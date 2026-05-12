@@ -20,6 +20,7 @@ import type { PmProduct } from '~/lib/pm-products';
 import {
   augmentToInternal,
   buildPmListing,
+  fetchBestSellingProductIds,
   type PmCategoryListing,
   type PmCategoryQuery,
   type PmInternalProduct,
@@ -235,6 +236,160 @@ const cachedSearchListingRaw = unstable_cache(
   { revalidate: 120, tags: ['pm-search'] },
 );
 
+// ---------------------------------------------------------------------------
+// Multi-brand listing — combines products from several BC brand IDs in one
+// pass. Used by the mega-menu partner-brand chips when a single curated brand
+// in the storefront represents several BC brand entities (e.g. "Hewlett
+// Packard Enterprise" aliases HPE + HPE Networking Instant On).
+// ---------------------------------------------------------------------------
+
+const PmBrandListingQuery = graphql(`
+  query PmBrandListingQuery($brandIds: [Int!]!, $limit: Int!) {
+    site {
+      search {
+        searchProducts(filters: { brandEntityIds: $brandIds }, sort: FEATURED) {
+          products(first: $limit) {
+            collectionInfo {
+              totalItems
+            }
+            edges {
+              node {
+                entityId
+                sku
+                name
+                path
+                brand {
+                  name
+                }
+                defaultImage {
+                  altText
+                  url(width: 320, height: 320)
+                }
+                inventory {
+                  isInStock
+                }
+                prices {
+                  price {
+                    value
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+const cachedBrandListingRaw = unstable_cache(
+  async (
+    brandIds: number[],
+    limit: number,
+  ): Promise<{ rawProducts: PmInternalProduct[]; totalCount: number }> => {
+    if (brandIds.length === 0) return { rawProducts: [], totalCount: 0 };
+
+    const { data } = await client.fetch({
+      document: PmBrandListingQuery,
+      variables: { brandIds, limit },
+      fetchOptions: { next: { revalidate: 120 } },
+    });
+
+    const products = data?.site?.search?.searchProducts?.products;
+    const totalCount = products?.collectionInfo?.totalItems ?? 0;
+    const edges = products?.edges ?? [];
+
+    const rawProducts: PmInternalProduct[] = edges
+      .map((edge) => edge?.node)
+      .filter((n): n is NonNullable<typeof n> => n != null)
+      .map((n, index) =>
+        augmentToInternal({
+          id: n.entityId,
+          sku: n.sku,
+          name: n.name,
+          bcPath: n.path,
+          brand: n.brand?.name,
+          imageUrl: n.defaultImage?.url ?? undefined,
+          imageAlt: n.defaultImage?.altText ?? undefined,
+          priceValue: n.prices?.price?.value,
+          priceLabel: formatPrice(n.prices?.price),
+          inStock: n.inventory?.isInStock ?? false,
+          newestIndex: index,
+        }),
+      );
+
+    return { rawProducts, totalCount };
+  },
+  ['pm-brand-listing-raw'],
+  { revalidate: 120, tags: ['pm-search'] },
+);
+
+/**
+ * Apply BC's best-seller data to an already-fetched list of products.
+ * The raw fetch is cached on (query, limit) so we can't fold the
+ * best-seller lookup inside it without polluting that cache key —
+ * instead we post-process here using the separately-cached set.
+ *
+ * Preserves the `isFeatured`-driven `sellingFast` already set by
+ * `augmentToInternal` (either signal triggers the badge).
+ */
+function applyBestSelling(
+  products: PmInternalProduct[],
+  bestSellingIds: Set<number>,
+): PmInternalProduct[] {
+  if (bestSellingIds.size === 0) return products;
+  return products.map((p) => ({
+    ...p,
+    sellingFast: p.inStock && (p.sellingFast || bestSellingIds.has(p.id)),
+  }));
+}
+
+/**
+ * Fetch a product listing across one or more BC brand IDs. Mirrors the shape
+ * of `fetchPmSearchListing` so the UI can render it via `PmCategoryListing`.
+ *
+ * @param brandIds  BC brand entity IDs to combine.
+ * @param label     Display label for the listing heading (e.g. "HPE").
+ * @param query     Sort / pagination / filter overrides.
+ */
+export async function fetchPmBrandListing(
+  brandIds: number[],
+  label: string,
+  query: PmCategoryQuery = {},
+): Promise<PmSearchListing> {
+  if (brandIds.length === 0) {
+    return {
+      query: label,
+      totalMatched: 0,
+      category: { slug: 'brand', name: label || 'Brand' },
+      allProducts: [],
+      pageProducts: [],
+      totalAfterFilters: 0,
+      totalPages: 1,
+      currentPage: 1,
+      pageSize: 24,
+      priceSliderMax: 10000,
+    };
+  }
+
+  const [{ rawProducts, totalCount }, bestSellingIds] = await Promise.all([
+    cachedBrandListingRaw(brandIds, 50),
+    fetchBestSellingProductIds(),
+  ]);
+  const listing = buildPmListing(
+    applyBestSelling(rawProducts, bestSellingIds),
+    query,
+  );
+
+  return {
+    query: label,
+    totalMatched: totalCount,
+    category: { slug: 'brand', name: label },
+    ...listing,
+  };
+}
+
 export interface PmSearchListing extends PmCategoryListing {
   /** The trimmed query string the listing was built for. */
   query: string;
@@ -267,9 +422,15 @@ export async function fetchPmSearchListing(
     };
   }
 
-  const { rawProducts, totalCount } = await cachedSearchListingRaw(trimmed, 50);
+  const [{ rawProducts, totalCount }, bestSellingIds] = await Promise.all([
+    cachedSearchListingRaw(trimmed, 50),
+    fetchBestSellingProductIds(),
+  ]);
 
-  const listing = buildPmListing(rawProducts, query);
+  const listing = buildPmListing(
+    applyBestSelling(rawProducts, bestSellingIds),
+    query,
+  );
 
   return {
     query: trimmed,

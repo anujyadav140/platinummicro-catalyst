@@ -24,11 +24,84 @@
  * page loads. Once BC starts returning these we drop the mocks.
  */
 
+import { unstable_cache } from 'next/cache';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
 import { revalidate } from '~/client/revalidate-target';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
+import { stripPmHeroBlock } from '~/lib/pm-hero-banner';
+import {
+  parsePmPageSections,
+  type PmPageSection,
+} from '~/lib/pm-page-sections';
 import type { PmProduct } from '~/lib/pm-products';
+
+// ─── "Selling fast" data sources ────────────────────────────────────────────
+// Two real BC signals drive the badge — neither is a per-product field in
+// the Storefront API, so we fetch each as a separate list of entity IDs:
+//
+//   1. `featuredProducts` — the products the admin marked "Featured" in
+//      BC admin → Edit Product → "Featured Product". Mirrors the same
+//      checkbox the legacy Platinum Micro site used.
+//   2. `bestSellingProducts` — BC's automatic top-sellers ranked by
+//      actual order volume.
+//
+// Each list is fetched once per 5-min window and shared via unstable_cache,
+// so every PLP/PDP/search render reuses the same lookup.
+const PmFeaturedAndBestSellingIdsQuery = graphql(`
+  query PmFeaturedAndBestSellingIdsQuery {
+    site {
+      featuredProducts(first: 50) {
+        edges {
+          node {
+            entityId
+          }
+        }
+      }
+      bestSellingProducts(first: 50) {
+        edges {
+          node {
+            entityId
+          }
+        }
+      }
+    }
+  }
+`);
+
+const cachedSellingFastIds = unstable_cache(
+  async (): Promise<{ featured: number[]; bestSelling: number[] }> => {
+    try {
+      const { data } = await client.fetch({
+        document: PmFeaturedAndBestSellingIdsQuery,
+        fetchOptions: { next: { revalidate: 300 } },
+      });
+      const extract = (edges: ReadonlyArray<{ node?: { entityId: number } | null } | null>) =>
+        edges
+          .map((edge) => edge?.node?.entityId)
+          .filter((id): id is number => typeof id === 'number');
+      return {
+        featured: extract(data?.site?.featuredProducts?.edges ?? []),
+        bestSelling: extract(data?.site?.bestSellingProducts?.edges ?? []),
+      };
+    } catch {
+      // Don't fail the whole listing if these lookups fail — just no badge.
+      return { featured: [], bestSelling: [] };
+    }
+  },
+  ['pm-selling-fast-ids'],
+  { revalidate: 300, tags: ['pm-selling-fast'] },
+);
+
+/**
+ * Returns a Set of BC product entity IDs that should display the
+ * "Selling fast" badge — the union of admin-flagged featured products
+ * and BC's auto-ranked top sellers.
+ */
+export async function fetchBestSellingProductIds(): Promise<Set<number>> {
+  const { featured, bestSelling } = await cachedSellingFastIds();
+  return new Set([...featured, ...bestSelling]);
+}
 
 export type PmCategorySort =
   | 'featured'
@@ -65,6 +138,11 @@ export interface PmCategoryDescriptor {
   name: string;
   description?: string;
   bannerImageUrl?: string;
+  /** Admin-managed page sections (hero banners + card grids, in
+   *  document order) parsed from the BC category description. Empty
+   *  array when nothing is configured. The shell renders each entry
+   *  by dispatching on `section.kind`. */
+  pageSections?: PmPageSection[];
 }
 
 export interface PmCategoryListing {
@@ -142,6 +220,10 @@ const PmCategoryProductsQuery = graphql(`
             name
             path
             description
+            defaultImage {
+              url(width: 1920, height: 720)
+              altText
+            }
             products(first: 50) {
               edges {
                 node {
@@ -214,20 +296,44 @@ interface PmCategoryFetchResult {
    *  display label we use as the canonical title. */
   bcCategoryName?: string;
   bcCategoryDescription?: string;
+  /** Built-in BC "Category Image" URL — falls into the hero banner as the
+   *  background image when the description block doesn't override it. */
+  bcCategoryImageUrl?: string;
 }
 
 async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetchResult> {
-  const path = `/${slug}/`;
-  const { data } = await client.fetch({
-    document: PmCategoryProductsQuery,
-    variables: { path },
-    fetchOptions: { next: { revalidate } },
-  });
+  // BC nests brand subcategories under `/brand/` (e.g.
+  // `/brand/hewlett-packard-enterprise/`). Try the slug at root first;
+  // if BC doesn't find a category there, retry under `/brand/`. This
+  // makes the mega-menu's partner-brand chips link straight to the
+  // right BC category without needing a separate /brand/ route.
+  const candidatePaths = [`/${slug}/`, `/brand/${slug}/`];
 
-  const node = data?.site?.route?.node;
+  const fetchAtPath = async (path: string) => {
+    const { data } = await client.fetch({
+      document: PmCategoryProductsQuery,
+      variables: { path },
+      fetchOptions: { next: { revalidate } },
+    });
+    return data?.site?.route?.node ?? null;
+  };
+
+  let node: Awaited<ReturnType<typeof fetchAtPath>> = null;
+  for (const path of candidatePaths) {
+    const candidate = await fetchAtPath(path);
+    if (candidate && candidate.__typename === 'Category') {
+      node = candidate;
+      break;
+    }
+  }
+
   if (!node || node.__typename !== 'Category') {
     return { products: [] };
   }
+
+  // Pull BC's best-seller list once so the "Selling fast" badge on each
+  // card reflects real sales velocity (cached for 5 min).
+  const bestSellingIds = await fetchBestSellingProductIds();
 
   const edges = node.products?.edges ?? [];
 
@@ -247,6 +353,7 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
         priceLabel: formatPrice(node.prices?.price),
         inStock: node.inventory?.isInStock ?? false,
         newestIndex: index,
+        bestSellingIds,
       }),
     );
 
@@ -254,6 +361,7 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
     products,
     bcCategoryName: node.name,
     bcCategoryDescription: node.description ?? undefined,
+    bcCategoryImageUrl: node.defaultImage?.url ?? undefined,
   };
 }
 
@@ -377,8 +485,12 @@ export function roundUpSliderMax(maxPrice: number): number {
 /**
  * Shared "augment raw BC product into PmInternalProduct" helper. Both the
  * category fetcher and the search fetcher use this so the mock fields
- * (rating, sale, featured, sellingFast) stay consistent across pages — a
- * product looks the same on a category grid and on a search results page.
+ * (rating, sale, featured) stay consistent across pages — a product looks
+ * the same on a category grid and on a search results page.
+ *
+ * The `sellingFast` flag is BC-data-driven: pass the result of
+ * `fetchBestSellingProductIds()` as `bestSellingIds` and any product whose
+ * entityId appears in BC's top-sellers list gets the badge (gated by stock).
  */
 export function augmentToInternal(input: {
   id: number;
@@ -393,6 +505,10 @@ export function augmentToInternal(input: {
   priceLabel?: string;
   inStock: boolean;
   newestIndex: number;
+  /** Union of BC's `featuredProducts` + `bestSellingProducts` IDs
+   *  (see `fetchBestSellingProductIds`). Drives the "Selling fast"
+   *  badge: products in this set get the badge when in stock. */
+  bestSellingIds?: Set<number>;
 }): PmInternalProduct {
   const id = input.id;
   const r1 = seedRand(id);
@@ -415,7 +531,10 @@ export function augmentToInternal(input: {
     imageAlt: input.imageAlt ?? input.name,
     priceLabel: input.priceLabel,
     inStock: input.inStock,
-    sellingFast: Math.floor(r2 * 1000) < 200,
+    // "Selling fast" — gated by stock, then a hit in `bestSellingIds`
+    // (which already unions BC's admin-flagged featured products with
+    // BC's auto-ranked top sellers — see `fetchBestSellingProductIds`).
+    sellingFast: input.inStock && (input.bestSellingIds?.has(id) ?? false),
     _priceValue: priceVal,
     _rating: rating,
     _salePrice: salePrice,
@@ -484,11 +603,13 @@ export async function fetchPmCategoryListing(
   let raw: PmInternalProduct[] = [];
   let bcCategoryName: string | undefined;
   let bcCategoryDescription: string | undefined;
+  let bcCategoryImageUrl: string | undefined;
   try {
     const result = await fetchPmCategoryRawProducts(slug);
     raw = result.products;
     bcCategoryName = result.bcCategoryName;
     bcCategoryDescription = result.bcCategoryDescription;
+    bcCategoryImageUrl = result.bcCategoryImageUrl;
   } catch (err) {
     // Don't throw — the category page should always render the chrome even
     // when BC is down or the slug doesn't resolve. Log so 4xx/5xx isn't
@@ -499,13 +620,26 @@ export async function fetchPmCategoryListing(
   }
 
   const baseDescriptor = descriptorFor(slug);
+  // Parse all admin-managed sections (heroes + card grids) out of the
+  // BC description in document order. Then strip the config fences
+  // from the displayed description so they never leak into the UI.
+  // The BC "Category Image" feeds in as the fallback background image
+  // for the FIRST hero — admins set it via BC's drag-drop image
+  // uploader, no URL typing needed.
+  const pageSections = parsePmPageSections(
+    bcCategoryDescription,
+    bcCategoryImageUrl,
+  );
+  const cleanedBcDescription = stripPmHeroBlock(bcCategoryDescription);
   const category: PmCategoryDescriptor = {
     ...baseDescriptor,
     name:
       PM_CATEGORY_DESCRIPTORS[slug]?.name ??
       bcCategoryName ??
       baseDescriptor.name,
-    description: baseDescriptor.description ?? bcCategoryDescription,
+    description:
+      baseDescriptor.description ?? (cleanedBcDescription || undefined),
+    pageSections,
   };
 
   return {

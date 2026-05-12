@@ -20,6 +20,7 @@ import {
   type PmCategorySort,
 } from '~/lib/pm-category-by-slug';
 import { PmCategoryListing } from '~/components/pm-category-listing';
+import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
 import type { PmViewMode } from '~/components/pm-view-toggle';
 import { getPmSessionCustomer } from '~/lib/pm-session-server';
 import { CategoryShell } from './category-shell';
@@ -136,6 +137,7 @@ export default async function CategoryPreviewPage({
 
   return (
     <CategoryShell customer={customer}>
+      <PmPageSectionsRenderer sections={listing.category.pageSections ?? []} />
       <PmCategoryListing
         category={listing.category}
         products={listing.pageProducts}

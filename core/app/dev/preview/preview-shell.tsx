@@ -7,17 +7,19 @@
  *   - QuickOrder modal open/close state
  *   - <PmQuoteProvider> for the BOM/Quote drawer
  *
- * The server `page.tsx` fetches BC catalog data and passes it down as props.
+ * The server `page.tsx` fetches BC catalog data + the homepage hero banner
+ * (from the admin-managed "PM Page Banners → homepage" category) and
+ * passes them down as props. The old hardcoded <PmHero> is gone — when
+ * the admin hasn't configured a banner, the homepage simply omits the
+ * hero section.
  */
 
 import { useState } from 'react';
 import { PmTopBar } from '~/components/pm-top-bar';
 import { PmHeader } from '~/components/pm-header';
-import { PmHero } from '~/components/pm-hero';
-import { PmAudienceStrip } from '~/components/pm-audience-strip';
+import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
 import { PmCategoryStrip } from '~/components/pm-category-strip';
 import { PmProductGrid } from '~/components/pm-product-grid';
-import { PmAboutBanner } from '~/components/pm-about-banner';
 import { PmBrandWall } from '~/components/pm-brand-wall';
 import { PmFooter } from '~/components/pm-footer';
 import {
@@ -33,20 +35,28 @@ import {
   type PmSessionCustomer,
 } from '~/lib/pm-session';
 import type { PmProduct } from '~/lib/pm-products';
+import type { PmPageSection } from '~/lib/pm-page-sections';
 
 export interface PreviewShellProps {
   products: PmProduct[];
   /** Signed-in customer pulled by the parent server page from `auth()`. */
   customer?: PmSessionCustomer | null;
+  /** Admin-managed page sections (heroes + card grids in document
+   *  order). Empty when not configured. */
+  sections?: PmPageSection[];
 }
 
-export function PreviewShell({ products, customer = null }: PreviewShellProps) {
+export function PreviewShell({
+  products,
+  customer = null,
+  sections = [],
+}: PreviewShellProps) {
   return (
     <PmSessionProvider customer={customer}>
       <PmListsProvider>
         <PmRecentlyViewedProvider>
           <PmQuoteProvider>
-            <PreviewInner products={products} />
+            <PreviewInner products={products} sections={sections} />
           </PmQuoteProvider>
         </PmRecentlyViewedProvider>
       </PmListsProvider>
@@ -54,7 +64,13 @@ export function PreviewShell({ products, customer = null }: PreviewShellProps) {
   );
 }
 
-function PreviewInner({ products }: { products: PmProduct[] }) {
+function PreviewInner({
+  products,
+  sections,
+}: {
+  products: PmProduct[];
+  sections: PmPageSection[];
+}) {
   const { lines, addLines, open: openDrawer } = usePmQuote();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
 
@@ -78,27 +94,14 @@ function PreviewInner({ products }: { products: PmProduct[] }) {
         homeHref="/dev/preview"
       />
 
-      <PmHero
-        eyebrow="Enterprise IT distribution · est. 2000"
-        headline="Enterprise IT, sourced."
-        lead="Two decades stocking servers, storage, and networking for system integrators, public sector, and healthcare buyers worldwide. Real lead times, real account managers, real freight from Southern California."
-        primaryCtaLabel="Request a quote"
-        primaryCtaHref="/dev/preview/account/register"
-        secondaryCtaLabel="Browse the catalog"
-        secondaryCtaHref="/dev/preview/category/servers"
-        featureCard={{
-          eyebrow: 'In stock now',
-          title: 'HPE ProLiant DL380 Gen11',
-          body: '2× Intel Xeon Gold 6444Y · 256 GB DDR5 ECC · iLO 6 · 3-year on-site warranty.',
-          price: '$8,420',
-          priceSuffix: '/unit',
-          stockBadge: '312 in stock',
-        }}
-        trustCardTitle="Quote in one business day."
-        trustCardBody="Average response time across all enterprise tickets."
-      />
-
-      <PmAudienceStrip />
+      {/* Admin-managed page sections (heroes + card grids), configured
+          via BC admin → Products → Categories → "PM Page Banners" →
+          "homepage" → Description. Each fence block (<!--pm-hero ... -->
+          or <!--pm-cards ... -->) renders here in document order. The
+          old hardcoded <PmAudienceStrip> ("Industries we serve") has
+          moved INTO this config — admin can edit/reorder/add/remove
+          cards without code. */}
+      <PmPageSectionsRenderer sections={sections} />
 
       <PmCategoryStrip />
 
@@ -109,8 +112,6 @@ function PreviewInner({ products }: { products: PmProduct[] }) {
         linkHref="/dev/preview/sitemap"
         products={products}
       />
-
-      <PmAboutBanner />
 
       <PmBrandWall />
 

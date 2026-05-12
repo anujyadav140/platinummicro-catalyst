@@ -15,6 +15,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import type { PmCategory } from '~/lib/pm-categories';
+import type { PmFooterConfig } from '~/lib/pm-footer-config';
 import type { PmMegaMenu } from '~/lib/pm-mega-menu';
 
 export type PmMegaMenuMap = Record<string, PmMegaMenu>;
@@ -29,6 +30,10 @@ interface PmNavValue {
    *  whose name starts with "Trust". Null when no such banner is active —
    *  the top bar then falls back to its hardcoded copy. */
   trustBarHtml: string | null;
+  /** Admin-managed footer styling/content overrides (parsed from the BC
+   *  "PM Footer" category's <!--pm-footer ... --> block). Null when not
+   *  configured — PmFooter then renders with its hardcoded defaults. */
+  footerConfig: PmFooterConfig | null;
 }
 
 const EMPTY: PmNavValue = {
@@ -36,6 +41,7 @@ const EMPTY: PmNavValue = {
   megaMenu: {},
   topBarDismissed: false,
   trustBarHtml: null,
+  footerConfig: null,
 };
 
 const PmNavContext = createContext<PmNavValue>(EMPTY);
@@ -70,4 +76,9 @@ export function usePmTopBarDismissed(): boolean {
 /** BC-driven HTML for the navy trust bar's left text, or null to fall back. */
 export function usePmTrustBarHtml(): string | null {
   return useContext(PmNavContext).trustBarHtml;
+}
+
+/** Admin-managed footer styling config, or null when not set. */
+export function usePmFooterConfig(): PmFooterConfig | null {
+  return useContext(PmNavContext).footerConfig;
 }

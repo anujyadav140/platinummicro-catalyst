@@ -54,3 +54,8 @@ build-config.json
 # OpenNext
 .open-next
 .wrangler
+
+# BC bulk-script runtime logs (auto-generated, not source)
+bc-upload-log.json
+bc-dedup-log.json
+bc-*-log.json

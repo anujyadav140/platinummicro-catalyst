@@ -13,13 +13,18 @@
  * click to copy. Example HTML in BC admin:
  *   Use code <code>SAVE20</code> for 20% off!
  *
- * Banners are individually dismissable (X button). Dismissed state is
- * per-session only — they come back on next visit.
+ * Banners are individually dismissable (X button). Dismissal is persisted
+ * in a cookie keyed by BC banner ID (see `PM_DISMISSED_BANNERS_COOKIE`),
+ * read server-side in the layout and filtered out before render so there
+ * is no SSR-to-CSR flash. We still flip local state on click so the banner
+ * disappears instantly without waiting for a router refresh.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Copy, Check } from 'lucide-react';
 import type { PmBanner } from '~/lib/pm-banners';
+import { appendDismissedBannerId } from '~/lib/pm-top-bar-cookie';
 
 interface PmBannerStripProps {
   banners: PmBanner[];
@@ -33,6 +38,7 @@ const PLACEMENT_TO_PAGE: Record<PmBannerStripProps['placement'], PmBanner['page'
 
 function BannerItem({ banner }: { banner: PmBanner }) {
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [dismissed, setDismissed] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -42,6 +48,17 @@ function BannerItem({ banner }: { banner: PmBanner }) {
       setTimeout(() => setCopiedCode(null), 1800);
     });
   }, []);
+
+  const handleDismiss = useCallback(() => {
+    // Persist first so a fast follow-up navigation/refresh still sees the
+    // dismissal, then flip local state so the banner disappears without
+    // waiting on the router. router.refresh() re-runs the server layout
+    // so other banner strips on the page (e.g. bottom placement) also
+    // pick up the new cookie state.
+    appendDismissedBannerId(banner.id);
+    setDismissed(true);
+    router.refresh();
+  }, [banner.id, router]);
 
   useEffect(() => {
     const el = ref.current;
@@ -85,7 +102,7 @@ function BannerItem({ banner }: { banner: PmBanner }) {
       )}
       <button
         type="button"
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-pm-ink-400 transition-colors hover:bg-pm-ink-200/50 hover:text-pm-ink-900"
         aria-label="Dismiss banner"
       >
