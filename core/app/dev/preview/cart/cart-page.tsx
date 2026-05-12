@@ -78,7 +78,17 @@ function formatUSD(n: number): string {
 }
 
 export function CartPageContent() {
-  const { lines, totalUnits, removeLine, setQty } = usePmQuote();
+  const { lines, totalUnits, removeLine, setQty, hydrated } = usePmQuote();
+
+  // SSR + the first client render see lines=[] until the localStorage
+  // hydration effect runs. Rendering the empty-state during that window
+  // would flash "Your cart is empty" for a frame on every page load even
+  // when the user has items saved. Suppress the cart UI entirely until
+  // hydration completes; the skeleton matches the page chrome so the
+  // header + breadcrumb stay where they're going to be.
+  if (!hydrated) {
+    return <CartHydratingSkeleton />;
+  }
 
   if (lines.length === 0) {
     return <CartEmptyState />;
@@ -614,6 +624,62 @@ function CartHelpCard() {
 }
 
 // ── Empty state ──────────────────────────────────────────────────────────
+
+// ── Hydration skeleton — shown for ~1 frame until pm-quote-store hydrates ──
+
+function CartHydratingSkeleton() {
+  return (
+    <div className="mx-auto max-w-pm-container px-8 py-10">
+      {/* Breadcrumb placeholder — same height as the real one so the page
+          chrome doesn't shift when content lands. */}
+      <div className="h-[18px] w-32 rounded-sm bg-pm-ink-100" />
+
+      <header className="mt-2 mb-8 border-b border-pm-ink-200 pb-6">
+        <div className="h-9 w-48 rounded-sm bg-pm-ink-100 sm:h-12 sm:w-56" />
+        <div className="mt-2 h-[18px] w-40 rounded-sm bg-pm-ink-100" />
+      </header>
+
+      <div className="grid gap-8 lg:grid-cols-[7fr_5fr] lg:items-start">
+        {/* LEFT — three rough line-item placeholders, just enough to
+            anchor the eye until the real cart loads. */}
+        <section aria-label="Cart items (loading)" className="flex flex-col gap-4">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="grid grid-cols-[80px_1fr] gap-4 rounded-lg border border-pm-ink-200 bg-white p-4 shadow-sm sm:grid-cols-[96px_1fr_auto] sm:p-5"
+            >
+              <div className="h-20 w-20 rounded-md bg-pm-ink-100 sm:h-24 sm:w-24" />
+              <div className="flex min-w-0 flex-col gap-2">
+                <div className="h-3 w-12 rounded-sm bg-pm-ink-100" />
+                <div className="h-4 w-3/4 rounded-sm bg-pm-ink-100" />
+                <div className="h-3 w-1/2 rounded-sm bg-pm-ink-100" />
+              </div>
+              <div className="hidden h-7 w-28 rounded-md bg-pm-ink-100 sm:block" />
+            </div>
+          ))}
+        </section>
+
+        {/* RIGHT — summary placeholder */}
+        <aside aria-label="Order summary (loading)">
+          <div className="overflow-hidden rounded-lg border border-pm-ink-200 bg-white shadow-sm">
+            <div className="border-b border-pm-ink-200 px-5 py-4">
+              <div className="h-5 w-32 rounded-sm bg-pm-ink-100" />
+            </div>
+            <div className="flex flex-col gap-3 px-5 py-5">
+              <div className="h-4 w-full rounded-sm bg-pm-ink-100" />
+              <div className="h-4 w-full rounded-sm bg-pm-ink-100" />
+              <div className="h-4 w-full rounded-sm bg-pm-ink-100" />
+              <div className="my-1 h-px bg-pm-ink-200" />
+              <div className="h-7 w-1/2 self-end rounded-sm bg-pm-ink-100" />
+              <div className="mt-2 h-11 w-full rounded-md bg-pm-ink-100" />
+              <div className="h-10 w-full rounded-md bg-pm-ink-100" />
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
 function CartEmptyState() {
   return (

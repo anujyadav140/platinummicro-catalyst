@@ -175,6 +175,15 @@ export interface PmBomLine {
 }
 
 interface PmQuoteContextValue {
+  /**
+   * True once we've finished reading from localStorage / sessionStorage.
+   * Consumers that render UI gated on cart contents (e.g. /cart's empty
+   * state vs. populated state) should suppress rendering until this is
+   * true — otherwise SSR + the first client render see an empty array
+   * and flash the empty state for ~1 frame before hydration completes.
+   */
+  hydrated: boolean;
+
   /** Current BOM lines, in insertion order */
   lines: PmBomLine[];
 
@@ -307,6 +316,7 @@ export function PmQuoteProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<PmQuoteContextValue>(
     () => ({
+      hydrated,
       lines,
       totalUnits,
       isOpen,
@@ -321,6 +331,7 @@ export function PmQuoteProvider({ children }: { children: ReactNode }) {
       setAppliedCoupon,
     }),
     [
+      hydrated,
       lines,
       totalUnits,
       isOpen,
