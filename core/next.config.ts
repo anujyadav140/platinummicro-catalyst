@@ -85,8 +85,29 @@ export default async (): Promise<NextConfig> => {
 
   let nextConfig: NextConfig = {
     reactStrictMode: true,
+    // Per the Catalyst optimization guide, Next.js can tree-shake icon /
+    // utility libraries much more aggressively when they're listed here.
+    // Without this, `import { ChevronDown } from 'lucide-react'` pulls in
+    // ALL ~1500 icons into the bundle; with it, only the ones actually
+    // referenced ship.
+    //
+    // Add a package here when:
+    //   - we import named exports from a single barrel file (lucide,
+    //     @radix-ui sub-packages, etc.)
+    //   - the package is large (10+ KB minified) when imported naively
     experimental: {
-      optimizePackageImports: ['@icons-pack/react-simple-icons'],
+      optimizePackageImports: [
+        '@icons-pack/react-simple-icons',
+        'lucide-react',
+        '@radix-ui/react-accordion',
+        '@radix-ui/react-checkbox',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-navigation-menu',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-radio-group',
+        '@radix-ui/react-select',
+      ],
     },
     typescript: {
       ignoreBuildErrors: !!process.env.CI,
@@ -119,6 +140,66 @@ export default async (): Promise<NextConfig> => {
         value: `<https://${url}>; rel=preconnect`,
       }));
 
+      // Security headers — defense in depth alongside the CSP defined
+      // in lib/content-security-policy.ts. None of these have any
+      // performance cost, and they harden against the most common
+      // attack classes:
+      //   - HSTS: forces HTTPS on every subsequent request for 2 years,
+      //     including subdomains. `preload` opts into the HSTS preload
+      //     list (chromium/firefox ship the domain hard-coded as
+      //     HTTPS-only). Safe once we're on HTTPS in prod.
+      //   - X-Frame-Options: redundant with CSP frame-ancestors but
+      //     covers older browsers that don't parse CSP.
+      //   - X-Content-Type-Options: kills MIME-sniffing attacks where
+      //     a server-supplied content type is overridden by the browser.
+      //   - Referrer-Policy: leaks the path of the previous page when
+      //     navigating cross-origin; strict-origin-when-cross-origin
+      //     sends only the bare origin in cross-origin requests.
+      //   - Permissions-Policy: explicitly disable browser features
+      //     this storefront has no business using (camera, mic,
+      //     geolocation, etc.). Prevents a future XSS from accessing
+      //     them even if it slipped through CSP.
+      const securityHeaders = [
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=63072000; includeSubDomains; preload',
+        },
+        {
+          key: 'X-Frame-Options',
+          // CSP frame-ancestors does the real work; this is a fallback.
+          // SAMEORIGIN (not DENY) because makeswift integration needs
+          // iframe embedding and CSP handles the case-by-case allow.
+          value: 'SAMEORIGIN',
+        },
+        {
+          key: 'X-Content-Type-Options',
+          value: 'nosniff',
+        },
+        {
+          key: 'Referrer-Policy',
+          value: 'strict-origin-when-cross-origin',
+        },
+        {
+          key: 'Permissions-Policy',
+          // Disable hardware-access features that an e-commerce storefront
+          // never needs. payment=*  is allowed because PaymentRequest is
+          // used by Apple Pay / Google Pay flows in the embedded checkout.
+          value: [
+            'camera=()',
+            'microphone=()',
+            'geolocation=()',
+            'gyroscope=()',
+            'magnetometer=()',
+            'accelerometer=()',
+            'usb=()',
+            'midi=()',
+            'autoplay=(self)',
+            'fullscreen=(self)',
+            'payment=*',
+          ].join(', '),
+        },
+      ];
+
       return [
         {
           source: '/(.*)',
@@ -127,6 +208,7 @@ export default async (): Promise<NextConfig> => {
               key: 'Content-Security-Policy',
               value: cspHeader.replace(/\n/g, ''),
             },
+            ...securityHeaders,
             ...cdnLinks,
           ],
         },
