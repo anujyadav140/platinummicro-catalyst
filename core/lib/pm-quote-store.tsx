@@ -28,11 +28,44 @@ import {
 } from 'react';
 
 /**
- * localStorage key for cart persistence. Bumping the version ('-v1', '-v2'
- * etc) will safely invalidate older shapes if PmBomLine ever changes
+ * localStorage key for cart-line persistence. Bumping the version ('-v1',
+ * '-v2' etc) will safely invalidate older shapes if PmBomLine ever changes
  * incompatibly — old data is dropped on read, not migrated.
  */
 const STORAGE_KEY = 'pm-quote-v1';
+
+/**
+ * sessionStorage key for drawer open/closed state.
+ *
+ * Why session (not local) storage: the open/closed flag should survive
+ * intra-tab navigation (so the drawer doesn't blink shut when the user
+ * clicks from PDP → category) but NOT survive a browser/tab restart —
+ * users coming back tomorrow shouldn't land into an unexpectedly open
+ * drawer. sessionStorage clears on tab close, which matches that exactly.
+ */
+const DRAWER_OPEN_KEY = 'pm-quote-drawer-open-v1';
+
+function loadDrawerOpenFromSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(DRAWER_OPEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveDrawerOpenToSession(isOpen: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (isOpen) {
+      window.sessionStorage.setItem(DRAWER_OPEN_KEY, '1');
+    } else {
+      window.sessionStorage.removeItem(DRAWER_OPEN_KEY);
+    }
+  } catch {
+    // sessionStorage disabled — non-fatal, drop silently.
+  }
+}
 
 function loadFromStorage(): PmBomLine[] {
   if (typeof window === 'undefined') return [];
@@ -129,28 +162,37 @@ const PmQuoteContext = createContext<PmQuoteContextValue | null>(null);
 export function PmQuoteProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<PmBomLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  // Hydration flag. Until we've read from localStorage, suppress the
-  // persistence effect — otherwise the empty initial state would clobber
+  // Hydration flag. Until we've read from storage, suppress the
+  // persistence effects — otherwise the empty initial state would clobber
   // saved data on the first render right after mount.
   const [hydrated, setHydrated] = useState(false);
 
-  // Hydrate from localStorage AFTER mount. Doing this in a useEffect (not
+  // Hydrate from storage AFTER mount. Doing this in a useEffect (not
   // useState initializer) keeps SSR markup deterministic — the server
-  // always emits `[]`, then the client swaps in saved lines on hydration.
-  // This is the same pattern PmListsProvider uses; without it, navigating
-  // between PreviewShell / CartShell / etc. would reset the cart because
-  // each shell mounts its own PmQuoteProvider instance.
+  // always emits `[]` + `isOpen=false`, then the client swaps in saved
+  // state on hydration. Same pattern PmListsProvider uses; without it,
+  // navigating between PreviewShell / CartShell / etc. would reset both
+  // the cart contents AND the drawer-open flag because each shell mounts
+  // its own PmQuoteProvider instance.
   useEffect(() => {
     setLines(loadFromStorage());
+    setIsOpen(loadDrawerOpenFromSession());
     setHydrated(true);
   }, []);
 
-  // Persist every change once hydrated. The guard prevents a write of `[]`
+  // Persist line changes once hydrated. The guard prevents a write of `[]`
   // on the very first render before the load completes, which would wipe
   // saved cart contents on every page navigation.
   useEffect(() => {
     if (hydrated) saveToStorage(lines);
   }, [lines, hydrated]);
+
+  // Persist drawer open/closed state to sessionStorage. Same hydration
+  // guard reasoning — don't overwrite a session-saved `true` with the
+  // initial `false` before the load completes.
+  useEffect(() => {
+    if (hydrated) saveDrawerOpenToSession(isOpen);
+  }, [isOpen, hydrated]);
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
