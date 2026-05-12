@@ -339,25 +339,31 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
   );
   const hasUnpricedLines = lines.some((l) => parsePrice(l.unitPrice) === null);
 
-  // Client-side discount preview based on the validated coupon's type +
-  // amount. Authoritative number comes from BC at checkout (we may show
-  // a slightly different value if e.g. the coupon excludes specific
-  // categories), but this gives the user a real-time signal that the
-  // coupon is taking effect. Shipping discounts intentionally show as
-  // "shows at checkout" because we don't have a shipping number yet.
+  // Client-side discount preview. One rule for every coupon type:
+  // the discount comes off the SUBTOTAL (sum of item prices) — never
+  // off shipping, never off tax, never off (subtotal + shipping). So
+  // a 10% coupon on a $15,007 cart shows $1,500.70 off, full stop.
+  //
+  // BC will still calculate the final number authoritatively at
+  // checkout — this is just a real-time preview so the user can see
+  // their coupon is taking effect.
   const couponDiscount = useMemo(() => {
-    if (!appliedCoupon || !appliedCoupon.valid) return 0;
-    if (typeof appliedCoupon.amount !== 'number') return 0;
-    switch (appliedCoupon.type) {
-      case 'percentage_discount':
-        return Math.max(0, subtotal * (appliedCoupon.amount / 100));
-      case 'cart_dollars_off':
-        return Math.max(0, Math.min(subtotal, appliedCoupon.amount));
-      default:
-        // shipping_amount_off, free_shipping, per_item_discount, other
-        // — can't reliably preview from cart context alone.
-        return 0;
+    if (
+      !appliedCoupon ||
+      !appliedCoupon.valid ||
+      typeof appliedCoupon.amount !== 'number' ||
+      appliedCoupon.amount <= 0
+    ) {
+      return 0;
     }
+    if (appliedCoupon.type === 'percentage_discount') {
+      return Math.max(0, subtotal * (appliedCoupon.amount / 100));
+    }
+    // Every other type (cart_dollars_off, shipping_amount_off,
+    // per_item_discount, free_shipping with a fixed amount, "other"
+    // catch-all) → treat the amount as a flat dollar discount on the
+    // subtotal. Clamp at the subtotal so we never go negative.
+    return Math.max(0, Math.min(subtotal, appliedCoupon.amount));
   }, [appliedCoupon, subtotal]);
   const postDiscountSubtotal = Math.max(0, subtotal - couponDiscount);
 
@@ -442,13 +448,7 @@ function CartSummary({ lines }: { lines: PmBomLine[] }) {
 
         <SummaryRow
           label="Shipping"
-          value={
-            appliedCoupon?.valid &&
-            (appliedCoupon.type === 'free_shipping' ||
-              appliedCoupon.type === 'shipping_amount_off')
-              ? 'Discount shows at checkout'
-              : 'Calculated at checkout'
-          }
+          value="Calculated at checkout"
           muted
         />
         <SummaryRow
