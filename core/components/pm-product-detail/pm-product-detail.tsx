@@ -319,7 +319,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           the product name. Each ancestor is clickable when we could resolve
           a category slug; otherwise it falls back to plain text so a stale
           BC path can't strand the user on a 404. */}
-      <div className="mx-auto max-w-pm-container px-8 pt-4">
+      <div className="w-full px-6 pt-4">
         <nav
           aria-label="Breadcrumb"
           className="flex items-center gap-2 text-[14px] text-pm-ink-500"
@@ -370,7 +370,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                     - Details column (title, brand link, SKU, MPN, price,
                       UPC, Shipping & Returns button)
                     - Buy-box card (Availability, Qty, Add to Cart) */}
-      <section className="mx-auto max-w-pm-container px-8 pb-14 pt-6">
+      <section className="w-full px-6 pb-14 pt-6">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,488px)_minmax(0,1fr)] lg:gap-12">
           <div className="flex justify-start">
             <PmProductGallery
@@ -617,7 +617,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           column laid out as a single stacked label/value column —
           tabular data doesn't need much width. Stacks at <lg. */}
       <section className="border-t border-pm-ink-200 bg-pm-paper">
-        <div className="mx-auto max-w-pm-container px-8 py-14">
+        <div className="w-full px-6 py-14">
           <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-16">
             {/* LEFT — Description (wider) */}
             <div>
@@ -742,7 +742,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           Specifications block above. */}
       {boxContents.length > 0 && (
         <section className="border-t border-pm-ink-200 bg-white">
-          <div className="mx-auto max-w-pm-container px-8 py-12">
+          <div className="w-full px-6 py-12">
             <h2 className="text-[22px] font-bold tracking-tight text-pm-ink-900">
               What&apos;s in the box
             </h2>
