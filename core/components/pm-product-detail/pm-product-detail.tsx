@@ -184,6 +184,21 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     (s) => !HIDDEN_SPEC_NORMS.has(norm(s.name)),
   );
 
+  // Highlights preview shown in the details column. Prefer a curated
+  // "Key Features" field when the BC admin set one; otherwise fall back
+  // to the first three meaningful specs ("Model: AS6712X", "CPU: Quad-
+  // Core 2.0 GHz", "Bays: 12") so the block always carries something
+  // useful instead of disappearing.
+  const detailsHighlights: Array<{ label?: string; value: string }> = (() => {
+    if (keyFeatures.length > 0) {
+      return keyFeatures.slice(0, 3).map((value) => ({ value }));
+    }
+    return visibleSpecs.slice(0, 3).map((s) => ({
+      label: s.name,
+      value: s.value,
+    }));
+  })();
+
   // Materialize the active bundle picks — each modifier with a non-"None"
   // selection becomes a (linkedProduct, qty) pair. Used for both the live
   // total preview and the Add-to-Cart payload.
@@ -226,65 +241,29 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     [activeBundlePicks],
   );
 
-  // Bundle base-discount % — mirrors the legacy "Bundle and get N% off"
-  // math where picking ANY real option shaves N% off the base price. Take
-  // the LARGEST percent across modifiers; if zero modifiers have a picked
-  // value, the discount is 0 (no incentive triggered yet).
-  const baseDiscountPct = useMemo(() => {
-    if (activeBundlePicks.length === 0) return 0;
-    let max = 0;
-    for (const m of product.bundleModifiers ?? []) {
-      const state = bundleState[m.modifierId];
-      if (!state || state.selectedValueId === null) continue;
-      if ((m.baseDiscountPercent ?? 0) > max) max = m.baseDiscountPercent ?? 0;
-    }
-    return max;
-  }, [product.bundleModifiers, bundleState, activeBundlePicks.length]);
-
-  // Discounted base unit price — what the base contributes per cart qty.
-  const discountedBaseUnit = useMemo(() => {
-    if (typeof product.priceValue !== 'number') return 0;
-    return product.priceValue * (1 - baseDiscountPct / 100);
-  }, [product.priceValue, baseDiscountPct]);
-
-  // Final price preview: (discounted base + bundle add-ons) × cart qty.
-  // Falls back to the BC-formatted price label when we don't have a numeric
-  // value (e.g. "Quote pricing" products with no priceValue).
+  // Final price preview: (base + bundle add-ons) × cart qty. No discount
+  // math here — whatever discount applies should be admin-configured in
+  // BC (modifier adjusters, price tiers, coupons) so this stays a thin
+  // arithmetic layer over BC's data.
   const previewTotalLabel = useMemo(() => {
     if (typeof product.priceValue !== 'number') return product.priceLabel;
-    const total = (discountedBaseUnit + bundleAddOnPerBase) * Math.max(1, qty);
+    const total = (product.priceValue + bundleAddOnPerBase) * Math.max(1, qty);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(total);
-  }, [product.priceValue, product.priceLabel, discountedBaseUnit, bundleAddOnPerBase, qty]);
-
-  // Formatted discounted base label (used in the price sublabel so the user
-  // sees exactly what the base contributes after the bundle discount).
-  const discountedBaseLabel = useMemo(() => {
-    if (typeof product.priceValue !== 'number') return undefined;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(discountedBaseUnit);
-  }, [product.priceValue, discountedBaseUnit]);
+  }, [product.priceValue, product.priceLabel, bundleAddOnPerBase, qty]);
 
   const handleAddToCart = () => {
-    // First line: the base product. When a bundle is selected, swap the
-    // unit price for the discounted version so the cart subtotal mirrors
-    // the PDP preview (and the legacy site's checkout). The BC modifier's
-    // percentage adjuster handles the same math at BC checkout.
-    const baseUnitPrice =
-      baseDiscountPct > 0 && discountedBaseLabel
-        ? discountedBaseLabel
-        : product.priceLabel;
+    // First line: the base product. Unit price is whatever BC reports as
+    // the standalone price — no client-side discount math.
     const lines = [
       {
         sku: product.sku,
         qty,
         title: product.name,
         imageUrl: heroImageUrl,
-        unitPrice: baseUnitPrice,
+        unitPrice: product.priceLabel,
         brand: product.brand,
         inStock: product.inStock,
         productEntityId: product.id,
@@ -381,11 +360,15 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           </div>
 
           {/* RIGHT — Info pane (details + buy-box card).
-              Buy-box was previously 260px which crushed the bundle option
-              labels. 360px gives the bundle card enough room for a 4TB
-              WD SSD title without aggressive truncation while leaving the
-              details column its remaining space. */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:gap-10">
+              - Buy-box is 360px so the bundle card fits a 4TB WD SSD
+                title without aggressive truncation.
+              - Inner grid is capped at 1080px so on wide monitors the
+                buy-box stops shy of the right edge instead of flying out
+                to it — keeps the details content and the buy-box visually
+                paired in the middle/left third of the page.
+              - Gap trimmed from 40px to 24px (md:gap-10 → md:gap-6) so
+                the two columns read as one buy-area, not two islands. */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:gap-6 lg:max-w-[1080px]">
             {/* DETAILS column */}
             <div className="flex flex-col">
               <h1 className="text-[24px] font-bold leading-[1.25] tracking-[-0.012em] text-pm-ink-900">
@@ -433,21 +416,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                     </div>
                     {bundleAddOnPerBase > 0 && (
                       <div className="mt-1.5 text-[12px] leading-snug text-pm-ink-500">
-                        {baseDiscountPct > 0 && discountedBaseLabel ? (
-                          <>
-                            Bundle discount applied:{' '}
-                            <span className="line-through">
-                              {product.priceLabel}
-                            </span>{' '}
-                            →{' '}
-                            <span className="font-semibold text-pm-ink-700">
-                              {discountedBaseLabel}
-                            </span>{' '}
-                            base ({baseDiscountPct}% off) + bundle add-ons
-                          </>
-                        ) : (
-                          <>Includes {product.priceLabel} base + bundle add-ons</>
-                        )}
+                        Includes {product.priceLabel} base + bundle add-ons
                       </div>
                     )}
                   </>
@@ -476,6 +445,50 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                 <Truck size={15} strokeWidth={2} />
                 Shipping and Returns
               </Link>
+
+              {/* ===== Highlights (top 3, with spec fallback) =====
+                  Surfaces a quick "what is this thing" digest beside the
+                  gallery. Prefers admin-curated "Key Features"; falls
+                  back to the first three specs so the block stays useful
+                  even on products where the BC admin didn't write a
+                  features list. The full feature grid + spec table live
+                  in the Description section below — the link anchors to
+                  it for the long version. */}
+              {detailsHighlights.length > 0 && (
+                <div className="mt-6 border-t border-pm-ink-200 pt-5">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-pm-tan">
+                    {keyFeatures.length > 0 ? 'Key features' : 'At a glance'}
+                  </div>
+                  <ul className="mt-2.5 flex flex-col gap-2 text-[13px] leading-[1.5] text-pm-ink-800">
+                    {detailsHighlights.map((h, i) => (
+                      <li
+                        key={`pdp-hl-${i}`}
+                        className="flex items-start gap-2.5"
+                      >
+                        <span
+                          aria-hidden
+                          className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pm-terracotta"
+                        />
+                        <span>
+                          {h.label && (
+                            <span className="font-semibold text-pm-ink-900">
+                              {h.label}:
+                            </span>
+                          )}{' '}
+                          {h.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="#pm-product-description"
+                    className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-pm-navy-mid underline-offset-[3px] hover:text-pm-navy-deep hover:underline"
+                  >
+                    See full details & specs
+                    <ChevronDown size={14} strokeWidth={2} />
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* BUY BOX card */}
@@ -616,7 +629,10 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           column since it's prose; specs gets the narrower (1fr) right
           column laid out as a single stacked label/value column —
           tabular data doesn't need much width. Stacks at <lg. */}
-      <section className="border-t border-pm-ink-200 bg-pm-paper">
+      <section
+        id="pm-product-description"
+        className="scroll-mt-24 border-t border-pm-ink-200 bg-pm-paper"
+      >
         <div className="w-full px-6 py-14">
           <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-16">
             {/* LEFT — Description (wider) */}
@@ -777,3 +793,4 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     </main>
   );
 }
+
