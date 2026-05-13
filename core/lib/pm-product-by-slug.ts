@@ -41,13 +41,34 @@ export interface PmCategoryCrumb {
 }
 
 /**
+ * Adjustment BC's pricing engine applies to the BASE product price when
+ * a bundle option is selected. Sourced verbatim from BC v3 REST
+ * `/v3/catalog/products/{id}/modifiers` → each value's
+ * `adjusters.price` field. We mirror BC's two adjuster types:
+ *
+ *   percentage — multiplier; value `-3` means take 3% off the base
+ *   relative   — flat amount in BC's base currency; value `-50` means
+ *                "$50 off" (negative discounts, positive surcharges)
+ *
+ * `null` / undefined means the admin left the adjuster empty in BC —
+ * picking that option doesn't change the base price. This is BC data,
+ * not parsed from labels or guessed from display names.
+ */
+export interface PmBundleBasePriceAdjuster {
+  type: 'percentage' | 'relative';
+  value: number;
+}
+
+/**
  * A single bundleable option — sourced from a BC ProductPickList modifier
- * value, hydrated with the linked product's price + image + stock.
+ * value, hydrated with the linked product's price + image + stock + any
+ * BC-configured base-price adjuster.
  *
  * Example: the AS6706T NAS bundle exposes one bundle option that links
  * to the WD 4TB SSD (sku CCWDS400T4B0E). The user picks a quantity in
  * the PDP and the Add-to-Cart action pushes (NAS qty=1) + (SSD qty=N)
- * as two separate cart lines.
+ * as two separate cart lines. If BC's modifier value has a `-3%` price
+ * adjuster, the PDP preview reflects that on the base price too.
  */
 export interface PmBundleOption {
   /** BC modifier-value entityId — opaque, used as the React key */
@@ -63,6 +84,8 @@ export interface PmBundleOption {
   productPriceLabel: string;
   productImageUrl?: string;
   productInStock: boolean;
+  /** What BC says picking this option does to the BASE price. See above. */
+  basePriceAdjuster?: PmBundleBasePriceAdjuster;
 }
 
 export interface PmBundleModifier {
@@ -276,6 +299,77 @@ const PmBundleLinkedProductsQuery = graphql(`
     }
   }
 `);
+
+/**
+ * Pulls modifier-value price adjusters straight off BC v3 REST. The
+ * Storefront GraphQL doesn't expose `adjusters.price` for
+ * `product_list_with_images` values, so we fetch them as a side car
+ * here using the admin access token. Cached per-request via Next's
+ * `revalidate`, so this is one extra REST call per cold PDP render.
+ *
+ * Returns a Map keyed by modifier-value entityId. Empty map (with a
+ * warn-not-throw) when env is missing or BC is unreachable — the PDP
+ * still renders, just without the adjuster math.
+ */
+async function fetchModifierAdjustersByValueId(
+  productId: number,
+  revalidate: number,
+): Promise<Map<number, PmBundleBasePriceAdjuster>> {
+  const storeHash = process.env.BIGCOMMERCE_STORE_HASH;
+  const accessToken = process.env.BIGCOMMERCE_ACCESS_TOKEN;
+  const out = new Map<number, PmBundleBasePriceAdjuster>();
+  if (!storeHash || !accessToken) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[pm-product-by-slug] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN — bundle adjusters disabled',
+    );
+    return out;
+  }
+  try {
+    const url = `https://api.bigcommerce.com/stores/${storeHash}/v3/catalog/products/${productId}/modifiers?include_fields=option_values`;
+    const res = await fetch(url, {
+      headers: {
+        'X-Auth-Token': accessToken,
+        Accept: 'application/json',
+      },
+      next: { revalidate },
+    });
+    if (!res.ok) return out;
+    const json = (await res.json()) as {
+      data?: Array<{
+        option_values?: Array<{
+          id?: number;
+          adjusters?: {
+            price?: { adjuster?: string; adjuster_value?: number | string };
+          };
+        }>;
+      }>;
+    };
+    for (const mod of json.data ?? []) {
+      for (const v of mod.option_values ?? []) {
+        if (typeof v.id !== 'number') continue;
+        const p = v.adjusters?.price;
+        if (!p?.adjuster) continue;
+        const raw =
+          typeof p.adjuster_value === 'string'
+            ? Number.parseFloat(p.adjuster_value)
+            : p.adjuster_value;
+        if (typeof raw !== 'number' || !Number.isFinite(raw)) continue;
+        if (p.adjuster === 'percentage' || p.adjuster === 'relative') {
+          out.set(v.id, { type: p.adjuster, value: raw });
+        }
+      }
+    }
+    return out;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[pm-product-by-slug] modifier adjuster fetch failed:',
+      err,
+    );
+    return out;
+  }
+}
 
 function formatPrice(price?: { value: number; currencyCode: string } | null): string | undefined {
   if (!price) return undefined;
@@ -527,11 +621,18 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
 
   if (linkedIds.size > 0) {
     try {
-      const { data: linkedData } = await client.fetch({
-        document: PmBundleLinkedProductsQuery,
-        variables: { entityIds: Array.from(linkedIds) },
-        fetchOptions: { next: { revalidate } },
-      });
+      // Fetch (a) the linked product details from GraphQL and (b) the
+      // modifier-value adjusters from REST in parallel. Adjusters aren't
+      // exposed in the Storefront GraphQL for product_list_with_images
+      // modifier values, so we have to side-channel them in.
+      const [{ data: linkedData }, adjustersByValueId] = await Promise.all([
+        client.fetch({
+          document: PmBundleLinkedProductsQuery,
+          variables: { entityIds: Array.from(linkedIds) },
+          fetchOptions: { next: { revalidate } },
+        }),
+        fetchModifierAdjustersByValueId(node.entityId, revalidate),
+      ]);
 
       // Map BC entityId → linked product details for fast option-by-option lookup.
       const productById = new Map<number, PmBundleOption>();
@@ -569,6 +670,9 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
             // Prefer the admin-set label from BC; fall back to the
             // linked product's own name if the admin left it blank.
             label: v.label?.trim() || linkedTemplate.productName,
+            // Whatever BC says picking this option does to the base price.
+            // Undefined when the admin didn't set an adjuster.
+            basePriceAdjuster: adjustersByValueId.get(v.entityId),
           });
         }
         if (values.length > 0) {

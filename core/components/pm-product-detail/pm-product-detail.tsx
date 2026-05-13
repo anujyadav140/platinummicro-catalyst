@@ -200,8 +200,8 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
   })();
 
   // Materialize the active bundle picks — each modifier with a non-"None"
-  // selection becomes a (linkedProduct, qty) pair. Used for both the live
-  // total preview and the Add-to-Cart payload.
+  // selection becomes a (linkedProduct, qty, adjuster) tuple. Used for
+  // both the live total preview and the Add-to-Cart payload.
   const activeBundlePicks = useMemo(() => {
     const picks: Array<{
       productId: number;
@@ -213,6 +213,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
       priceValue: number;
       quantity: number;
       inStock: boolean;
+      basePriceAdjuster?: { type: 'percentage' | 'relative'; value: number };
     }> = [];
     for (const m of product.bundleModifiers ?? []) {
       const state = bundleState[m.modifierId];
@@ -229,6 +230,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
         priceValue: value.productPriceValue,
         quantity: state.quantity,
         inStock: value.productInStock,
+        basePriceAdjuster: value.basePriceAdjuster,
       });
     }
     return picks;
@@ -241,29 +243,57 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     [activeBundlePicks],
   );
 
-  // Final price preview: (base + bundle add-ons) × cart qty. No discount
-  // math here — whatever discount applies should be admin-configured in
-  // BC (modifier adjusters, price tiers, coupons) so this stays a thin
-  // arithmetic layer over BC's data.
+  // Effective base unit price after applying whatever BC's modifier
+  // value adjusters do. Percentage adjusters multiply (`-3` → ×0.97);
+  // relative adjusters add (`-50` → $50 off). When the admin left the
+  // adjuster empty the base passes through unchanged. This number IS
+  // BC's data — `value.basePriceAdjuster` came straight from BC's
+  // `adjusters.price` field via REST. No parsing of display names, no
+  // hardcoded percentages.
+  const effectiveBaseUnit = useMemo(() => {
+    if (typeof product.priceValue !== 'number') return 0;
+    let base = product.priceValue;
+    for (const pick of activeBundlePicks) {
+      const adj = pick.basePriceAdjuster;
+      if (!adj) continue;
+      if (adj.type === 'percentage') base = base * (1 + adj.value / 100);
+      else if (adj.type === 'relative') base = base + adj.value;
+    }
+    return base;
+  }, [product.priceValue, activeBundlePicks]);
+
+  // Final price preview: (effective base + bundle add-ons) × cart qty.
   const previewTotalLabel = useMemo(() => {
     if (typeof product.priceValue !== 'number') return product.priceLabel;
-    const total = (product.priceValue + bundleAddOnPerBase) * Math.max(1, qty);
+    const total = (effectiveBaseUnit + bundleAddOnPerBase) * Math.max(1, qty);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(total);
-  }, [product.priceValue, product.priceLabel, bundleAddOnPerBase, qty]);
+  }, [product.priceValue, product.priceLabel, effectiveBaseUnit, bundleAddOnPerBase, qty]);
+
+  // Formatted effective base unit (for the cart line). Falls back to the
+  // BC label when the product has no priceValue.
+  const effectiveBaseLabel = useMemo(() => {
+    if (typeof product.priceValue !== 'number') return product.priceLabel;
+    if (effectiveBaseUnit === product.priceValue) return product.priceLabel;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(effectiveBaseUnit);
+  }, [product.priceValue, product.priceLabel, effectiveBaseUnit]);
 
   const handleAddToCart = () => {
-    // First line: the base product. Unit price is whatever BC reports as
-    // the standalone price — no client-side discount math.
+    // First line: the base product. Unit price reflects whatever BC's
+    // modifier adjuster does to the base when an option is selected — so
+    // the cart subtotal matches the PDP preview and BC's checkout.
     const lines = [
       {
         sku: product.sku,
         qty,
         title: product.name,
         imageUrl: heroImageUrl,
-        unitPrice: product.priceLabel,
+        unitPrice: effectiveBaseLabel,
         brand: product.brand,
         inStock: product.inStock,
         productEntityId: product.id,
