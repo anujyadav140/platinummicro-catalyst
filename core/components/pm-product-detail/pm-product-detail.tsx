@@ -189,14 +189,14 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
 
   // Highlights preview shown in the details column. Prefer a curated
   // "Key Features" field when the BC admin set one; otherwise fall back
-  // to the first three meaningful specs ("Model: AS6712X", "CPU: Quad-
-  // Core 2.0 GHz", "Bays: 12") so the block always carries something
-  // useful instead of disappearing.
+  // to the first FOUR meaningful specs ("CPU Model", "CPU Architecture",
+  // "CPU Frequency", "Memory" / "RAM" / etc.) so the block always carries
+  // something useful instead of disappearing.
   const detailsHighlights: Array<{ label?: string; value: string }> = (() => {
     if (keyFeatures.length > 0) {
-      return keyFeatures.slice(0, 3).map((value) => ({ value }));
+      return keyFeatures.slice(0, 4).map((value) => ({ value }));
     }
-    return visibleSpecs.slice(0, 3).map((s) => ({
+    return visibleSpecs.slice(0, 4).map((s) => ({
       label: s.name,
       value: s.value,
     }));
