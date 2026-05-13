@@ -40,6 +40,42 @@ export interface PmCategoryCrumb {
   href: string;
 }
 
+/**
+ * A single bundleable option — sourced from a BC ProductPickList modifier
+ * value, hydrated with the linked product's price + image + stock.
+ *
+ * Example: the AS6706T NAS bundle exposes one bundle option that links
+ * to the WD 4TB SSD (sku CCWDS400T4B0E). The user picks a quantity in
+ * the PDP and the Add-to-Cart action pushes (NAS qty=1) + (SSD qty=N)
+ * as two separate cart lines.
+ */
+export interface PmBundleOption {
+  /** BC modifier-value entityId — opaque, used as the React key */
+  valueId: number;
+  /** Display label set by the admin in BC (e.g. "WD 4TB Blue SSD") */
+  label: string;
+  /** Linked product — what gets added to the cart at the chosen quantity */
+  productId: number;
+  productSku: string;
+  productName: string;
+  productHref: string;
+  productPriceValue: number;
+  productPriceLabel: string;
+  productImageUrl?: string;
+  productInStock: boolean;
+}
+
+export interface PmBundleModifier {
+  /** BC modifier entityId */
+  modifierId: number;
+  /** Section heading shown in the PDP (e.g. "Bundle and get 3% off") */
+  displayName: string;
+  /** When true, "None" can NOT be picked — user must select an option */
+  isRequired: boolean;
+  /** All admin-configured option values for this modifier */
+  values: PmBundleOption[];
+}
+
 export interface PmProductDetail {
   id: number;
   sku: string;
@@ -52,6 +88,9 @@ export interface PmProductDetail {
   galleryImages: PmProductImage[];
   /** Localized formatted price string */
   priceLabel?: string;
+  /** Raw price value (numeric USD) — kept alongside the formatted label so
+   *  the PDP can compute a live bundle total without re-parsing. */
+  priceValue?: number;
   /** Whether the product is in stock right now */
   inStock: boolean;
   /** Aggregated stock count from BC (only set if inventory tracking is on) */
@@ -69,6 +108,13 @@ export interface PmProductDetail {
   specs: PmProductSpec[];
   /** Related products for the strip below — already shaped for PmProductGrid */
   related: PmProduct[];
+  /**
+   * Bundleable modifiers (BC ProductPickList type). Empty when the admin
+   * hasn't configured any modifiers in BC for this product. The PDP
+   * renders a "Bundle and get N% off" block per modifier with a single
+   * quantity stepper that multiplies the chosen option.
+   */
+  bundleModifiers: PmBundleModifier[];
 }
 
 const PmProductBySlugQuery = graphql(`
@@ -137,6 +183,32 @@ const PmProductBySlugQuery = graphql(`
                 currencyCode
               }
             }
+            productOptions(first: 10) {
+              edges {
+                node {
+                  entityId
+                  displayName
+                  isRequired
+                  __typename
+                  ... on MultipleChoiceOption {
+                    displayStyle
+                    values(first: 25) {
+                      edges {
+                        node {
+                          entityId
+                          label
+                          isDefault
+                          __typename
+                          ... on ProductPickListOptionValue {
+                            productId
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
             relatedProducts(first: 4) {
               edges {
                 node {
@@ -162,6 +234,41 @@ const PmProductBySlugQuery = graphql(`
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+/**
+ * Second-pass query: fetch the small set of bundle-linked products by ID
+ * (price, image, sku, stock) in one round-trip. Run AFTER the main product
+ * query returns so we know which IDs to ask for.
+ */
+const PmBundleLinkedProductsQuery = graphql(`
+  query PmBundleLinkedProductsQuery($entityIds: [Int!]!) {
+    site {
+      products(entityIds: $entityIds, first: 25) {
+        edges {
+          node {
+            entityId
+            sku
+            name
+            path
+            inventory {
+              isInStock
+            }
+            prices {
+              price {
+                value
+                currencyCode
+              }
+            }
+            defaultImage {
+              altText
+              url: urlTemplate(lossy: true)
             }
           }
         }
@@ -398,6 +505,88 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
       inStock: n.inventory?.isInStock ?? false,
     }));
 
+  // Bundle modifiers — gather every productId referenced across all option
+  // values, then fetch their details in a single follow-up query. When
+  // there are no modifiers (admin hasn't configured any), this whole
+  // block short-circuits and `bundleModifiers` is `[]`.
+  const bundleModifiers: PmBundleModifier[] = [];
+  const optionEdges = node.productOptions?.edges ?? [];
+  const linkedIds = new Set<number>();
+  for (const edge of optionEdges) {
+    const opt = edge?.node;
+    if (!opt || opt.__typename !== 'MultipleChoiceOption') continue;
+    for (const vEdge of opt.values?.edges ?? []) {
+      const v = vEdge?.node;
+      if (v && v.__typename === 'ProductPickListOptionValue' && typeof v.productId === 'number') {
+        linkedIds.add(v.productId);
+      }
+    }
+  }
+
+  if (linkedIds.size > 0) {
+    try {
+      const { data: linkedData } = await client.fetch({
+        document: PmBundleLinkedProductsQuery,
+        variables: { entityIds: Array.from(linkedIds) },
+        fetchOptions: { next: { revalidate } },
+      });
+
+      // Map BC entityId → linked product details for fast option-by-option lookup.
+      const productById = new Map<number, PmBundleOption>();
+      for (const edge of linkedData?.site?.products?.edges ?? []) {
+        const p = edge?.node;
+        if (!p) continue;
+        productById.set(p.entityId, {
+          valueId: 0, // filled in per-option below
+          label: '', // filled in per-option below
+          productId: p.entityId,
+          productSku: p.sku ?? `bc-${p.entityId}`,
+          productName: p.name,
+          productHref: `/dev/preview/product${p.path}`,
+          productPriceValue: p.prices?.price?.value ?? 0,
+          productPriceLabel:
+            formatPrice(p.prices?.price) ?? '',
+          productImageUrl: p.defaultImage?.url ?? undefined,
+          productInStock: p.inventory?.isInStock ?? false,
+        });
+      }
+
+      for (const edge of optionEdges) {
+        const opt = edge?.node;
+        if (!opt || opt.__typename !== 'MultipleChoiceOption') continue;
+        const values: PmBundleOption[] = [];
+        for (const vEdge of opt.values?.edges ?? []) {
+          const v = vEdge?.node;
+          if (!v || v.__typename !== 'ProductPickListOptionValue') continue;
+          if (typeof v.productId !== 'number') continue;
+          const linkedTemplate = productById.get(v.productId);
+          if (!linkedTemplate) continue;
+          values.push({
+            ...linkedTemplate,
+            valueId: v.entityId,
+            // Prefer the admin-set label from BC; fall back to the
+            // linked product's own name if the admin left it blank.
+            label: v.label?.trim() || linkedTemplate.productName,
+          });
+        }
+        if (values.length > 0) {
+          bundleModifiers.push({
+            modifierId: opt.entityId,
+            displayName: opt.displayName,
+            isRequired: opt.isRequired,
+            values,
+          });
+        }
+      }
+    } catch (err) {
+      // Bundle data is non-essential — log and continue with the rest
+      // of the PDP. Without this safety net, a transient BC hiccup on
+      // the linked-products query would 500 the whole PDP.
+      // eslint-disable-next-line no-console
+      console.warn('[pm-product-by-slug] linked-products query failed:', err);
+    }
+  }
+
   return {
     id: node.entityId,
     sku: node.sku ?? `bc-${node.entityId}`,
@@ -407,11 +596,13 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
     upc: node.upc ?? undefined,
     galleryImages,
     priceLabel: formatPrice(node.prices?.price),
+    priceValue: node.prices?.price?.value ?? undefined,
     inStock: node.inventory?.isInStock ?? false,
     stockQuantity: node.inventory?.aggregated?.availableToSell ?? undefined,
     shortDescription: node.plainTextDescription ?? undefined,
     categoryTrail,
     specs,
     related,
+    bundleModifiers,
   };
 }

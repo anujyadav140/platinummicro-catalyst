@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { usePmQuote } from '~/lib/pm-quote-store';
 import { usePmRecentlyViewed } from '~/lib/pm-recently-viewed-store';
+import { PmBundleOptions } from '~/components/pm-bundle-options';
 import { PmProductGallery } from '~/components/pm-product-gallery';
 import { PmProductGrid } from '~/components/pm-product-grid';
 import { PmAddToListButton } from '~/components/pm-add-to-list-menu';
@@ -117,6 +118,27 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
   const { trackView } = usePmRecentlyViewed();
   const [qty, setQty] = useState<number>(1);
   const [specsExpanded, setSpecsExpanded] = useState(false);
+  // Per-modifier selection state. Keyed by BC modifier entityId. A null
+  // value means "None" — no bundle item added for that modifier.
+  // Default qty=1 because the option is meaningless at qty=0.
+  const [bundleState, setBundleState] = useState<
+    Record<number, { selectedValueId: number | null; quantity: number }>
+  >(() => {
+    const init: Record<number, { selectedValueId: number | null; quantity: number }> = {};
+    for (const m of product.bundleModifiers ?? []) {
+      // Honor BC's isDefault flag on the first value when present —
+      // otherwise default to "None" (null) for optional modifiers,
+      // and to the first value for required ones.
+      const defaultValue = m.values.find((v) =>
+        m.isRequired ? true : false,
+      );
+      init[m.modifierId] = {
+        selectedValueId: defaultValue ? defaultValue.valueId : null,
+        quantity: 1,
+      };
+    }
+    return init;
+  });
 
   const heroImageUrl = useMemo(
     () => product.galleryImages[0]?.url,
@@ -162,8 +184,64 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     (s) => !HIDDEN_SPEC_NORMS.has(norm(s.name)),
   );
 
+  // Materialize the active bundle picks — each modifier with a non-"None"
+  // selection becomes a (linkedProduct, qty) pair. Used for both the live
+  // total preview and the Add-to-Cart payload.
+  const activeBundlePicks = useMemo(() => {
+    const picks: Array<{
+      productId: number;
+      sku: string;
+      name: string;
+      href: string;
+      imageUrl?: string;
+      priceLabel: string;
+      priceValue: number;
+      quantity: number;
+      inStock: boolean;
+    }> = [];
+    for (const m of product.bundleModifiers ?? []) {
+      const state = bundleState[m.modifierId];
+      if (!state || state.selectedValueId === null) continue;
+      const value = m.values.find((v) => v.valueId === state.selectedValueId);
+      if (!value) continue;
+      picks.push({
+        productId: value.productId,
+        sku: value.productSku,
+        name: value.productName,
+        href: value.productHref,
+        imageUrl: value.productImageUrl,
+        priceLabel: value.productPriceLabel,
+        priceValue: value.productPriceValue,
+        quantity: state.quantity,
+        inStock: value.productInStock,
+      });
+    }
+    return picks;
+  }, [product.bundleModifiers, bundleState]);
+
+  // Bundle add-on $ contribution per single "cart qty" of the base — the
+  // PDP buy-box then multiplies this by `qty` for the final total preview.
+  const bundleAddOnPerBase = useMemo(
+    () => activeBundlePicks.reduce((sum, p) => sum + p.priceValue * p.quantity, 0),
+    [activeBundlePicks],
+  );
+
+  // Final price preview: (base + bundle add-on) × cart qty. Falls back to
+  // the BC-formatted price label when we don't have a numeric value
+  // (e.g. "Quote pricing" products with no priceValue).
+  const previewTotalLabel = useMemo(() => {
+    if (typeof product.priceValue !== 'number') return product.priceLabel;
+    const total = (product.priceValue + bundleAddOnPerBase) * Math.max(1, qty);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(total);
+  }, [product.priceValue, product.priceLabel, bundleAddOnPerBase, qty]);
+
   const handleAddToCart = () => {
-    addLines([
+    // First line: the base product.
+    const lines = [
       {
         sku: product.sku,
         qty,
@@ -174,7 +252,26 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
         inStock: product.inStock,
         productEntityId: product.id,
       },
-    ]);
+    ];
+
+    // Bundle-option lines: each pick = its own cart line, quantity scaled
+    // by the cart qty so a user buying 2 NAS units with a 3× SSD pick
+    // ends up with 6 SSDs. Inventory tracks correctly on the SSD's own
+    // SKU; BC handles tax/shipping/promotions per-line.
+    for (const pick of activeBundlePicks) {
+      lines.push({
+        sku: pick.sku,
+        qty: pick.quantity * qty,
+        title: pick.name,
+        imageUrl: pick.imageUrl,
+        unitPrice: pick.priceLabel,
+        brand: undefined,
+        inStock: pick.inStock,
+        productEntityId: pick.productId,
+      });
+    }
+
+    addLines(lines);
     open();
   };
 
@@ -282,12 +379,23 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                 </div>
               </div>
 
-              {/* Price (above divider) */}
+              {/* Price (above divider). When the user has picked any
+                  bundle add-ons, the displayed number reflects the live
+                  total (base + add-ons × qty); otherwise it's just the
+                  base price as before. The smaller sublabel makes it
+                  clear that any extra reflects the bundle choice. */}
               <div className="mt-5 border-t border-pm-ink-200 pt-5">
                 {product.priceLabel ? (
-                  <div className="text-[32px] font-bold leading-none text-pm-ink-900">
-                    {product.priceLabel}
-                  </div>
+                  <>
+                    <div className="text-[32px] font-bold leading-none text-pm-ink-900">
+                      {previewTotalLabel}
+                    </div>
+                    {bundleAddOnPerBase > 0 && (
+                      <div className="mt-1.5 text-[12px] text-pm-ink-500">
+                        Includes {product.priceLabel} base + bundle add-ons
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-[16px] font-semibold text-pm-ink-700">
                     Quote pricing on request
@@ -317,6 +425,31 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
 
             {/* BUY BOX card */}
             <aside className="flex h-fit flex-col rounded-md border border-pm-ink-200 bg-white p-5 shadow-sm">
+              {/* Bundle options block — one per BC modifier. When the admin
+                  hasn't configured any bundle modifiers in BC, this whole
+                  section collapses to nothing and the buy-box reads exactly
+                  like a non-bundle PDP. */}
+              {(product.bundleModifiers ?? []).length > 0 && (
+                <div className="mb-5 flex flex-col gap-3">
+                  {product.bundleModifiers.map((mod) => (
+                    <PmBundleOptions
+                      key={mod.modifierId}
+                      modifier={mod}
+                      selectedValueId={
+                        bundleState[mod.modifierId]?.selectedValueId ?? null
+                      }
+                      quantity={bundleState[mod.modifierId]?.quantity ?? 1}
+                      onChange={(next) =>
+                        setBundleState((prev) => ({
+                          ...prev,
+                          [mod.modifierId]: next,
+                        }))
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="text-[13px] text-pm-ink-700">Availability</div>
               {product.inStock ? (
                 <div className="mt-1 flex items-baseline gap-1.5">
