@@ -555,7 +555,7 @@ export async function fetchPmMegaMenu(): Promise<PmMegaMenuMap> {
     return menu;
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[pm-mega-menu-fetcher] failed, falling back to static config:', err);
+    console.warn('[pm-mega-menu-fetcher] failed, falling back to static config:', err);
     return PM_MEGA_MENU;
   }
 }

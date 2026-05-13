@@ -31,7 +31,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const [product, customer] = await Promise.all([
     fetchPmProductBySlug(decoded).catch((error) => {
       // eslint-disable-next-line no-console -- dev-only helpful signal
-      console.error('[dev/preview/product] product fetch failed:', error);
+      // `console.warn` not `.error` — see app/dev/preview/page.tsx for why.
+      console.warn('[dev/preview/product] product fetch failed:', error);
       return null;
     }),
     getPmSessionCustomer(),

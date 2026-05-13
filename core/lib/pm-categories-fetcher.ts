@@ -123,7 +123,7 @@ export async function fetchPmCategories(): Promise<PmCategory[]> {
     return result;
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[pm-categories-fetcher] failed, falling back to static:', err);
+    console.warn('[pm-categories-fetcher] failed, falling back to static:', err);
     return PM_CATEGORIES;
   }
 }

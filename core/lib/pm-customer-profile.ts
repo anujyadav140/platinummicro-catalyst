@@ -86,7 +86,7 @@ export async function fetchPmCustomerProfile(): Promise<PmCustomerProfile | null
     };
   } catch (error) {
     // eslint-disable-next-line no-console -- dev-only diagnostic
-    console.error('[pm-customer-profile] fetch failed:', error);
+    console.warn('[pm-customer-profile] fetch failed:', error);
     return null;
   }
 }

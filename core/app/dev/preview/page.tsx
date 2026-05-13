@@ -22,8 +22,13 @@ async function safeFetch(): Promise<PmProduct[]> {
   try {
     return await fetchPmFeaturedProducts();
   } catch (error) {
+    // `console.warn` (not `console.error`) on purpose — Next's dev overlay
+    // promotes every server-side `console.error` to a blocking "Console
+    // TypeError" popup, even when we've already caught + handled the
+    // failure with a graceful fallback. The warn-level log still shows
+    // up in the terminal for visibility.
     // eslint-disable-next-line no-console -- dev-only helpful signal
-    console.error('[dev/preview] product fetch failed, rendering empty grid:', error);
+    console.warn('[dev/preview] product fetch failed, rendering empty grid:', error);
     return [];
   }
 }

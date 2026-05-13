@@ -125,7 +125,7 @@ export async function fetchPmPromotions(): Promise<PmPromotion[]> {
 
   if (!storeHash || !accessToken) {
     // eslint-disable-next-line no-console
-    console.error('[pm-promotions] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN');
+    console.warn('[pm-promotions] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN');
     return [];
   }
 
@@ -142,7 +142,7 @@ export async function fetchPmPromotions(): Promise<PmPromotion[]> {
 
     if (!response.ok) {
       // eslint-disable-next-line no-console
-      console.error(`[pm-promotions] BC returned ${response.status} ${response.statusText}`);
+      console.warn(`[pm-promotions] BC returned ${response.status} ${response.statusText}`);
       return [];
     }
 
@@ -176,7 +176,7 @@ export async function fetchPmPromotions(): Promise<PmPromotion[]> {
     return mapped;
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[pm-promotions] failed to fetch promotions:', err);
+    console.warn('[pm-promotions] failed to fetch promotions:', err);
     return [];
   }
 }

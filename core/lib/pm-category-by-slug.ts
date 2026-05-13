@@ -615,7 +615,7 @@ export async function fetchPmCategoryListing(
     // when BC is down or the slug doesn't resolve. Log so 4xx/5xx isn't
     // hidden during dev.
     // eslint-disable-next-line no-console
-    console.error('[pm-category-by-slug] fetch failed:', err);
+    console.warn('[pm-category-by-slug] fetch failed:', err);
     raw = [];
   }
 

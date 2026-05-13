@@ -102,7 +102,7 @@ export async function validatePmCoupon(rawCode: string): Promise<PmCouponValidat
 
   if (!storeHash || !accessToken) {
     // eslint-disable-next-line no-console
-    console.error('[pm-coupons] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN');
+    console.warn('[pm-coupons] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN');
     return { valid: false, code, reason: 'Could not check this code right now' };
   }
 
@@ -125,7 +125,7 @@ export async function validatePmCoupon(rawCode: string): Promise<PmCouponValidat
 
     if (!res.ok) {
       // eslint-disable-next-line no-console
-      console.error('[pm-coupons] BC responded', res.status, res.statusText);
+      console.warn('[pm-coupons] BC responded', res.status, res.statusText);
       return { valid: false, code, reason: 'Could not check this code right now' };
     }
 
@@ -160,7 +160,7 @@ export async function validatePmCoupon(rawCode: string): Promise<PmCouponValidat
     };
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[pm-coupons] validation failed:', err);
+    console.warn('[pm-coupons] validation failed:', err);
     return { valid: false, code, reason: 'Could not check this code right now' };
   }
 }

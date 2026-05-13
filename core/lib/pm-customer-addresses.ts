@@ -112,7 +112,7 @@ export async function fetchPmCustomerAddresses(): Promise<PmBcAddress[]> {
       }));
   } catch (error) {
     // eslint-disable-next-line no-console -- dev-only diagnostic
-    console.error('[pm-customer-addresses] fetch failed:', error);
+    console.warn('[pm-customer-addresses] fetch failed:', error);
     return [];
   }
 }

@@ -63,7 +63,7 @@ export async function fetchPmBanners(): Promise<PmBanner[]> {
 
   if (!storeHash || !accessToken) {
     // eslint-disable-next-line no-console
-    console.error('[pm-banners] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN, returning []');
+    console.warn('[pm-banners] missing BIGCOMMERCE_STORE_HASH or BIGCOMMERCE_ACCESS_TOKEN, returning []');
     return [];
   }
 
@@ -85,7 +85,7 @@ export async function fetchPmBanners(): Promise<PmBanner[]> {
 
     if (!res.ok) {
       // eslint-disable-next-line no-console
-      console.error(`[pm-banners] BC REST returned ${res.status}, returning []`);
+      console.warn(`[pm-banners] BC REST returned ${res.status}, returning []`);
       return [];
     }
 
@@ -103,7 +103,7 @@ export async function fetchPmBanners(): Promise<PmBanner[]> {
       }, []);
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[pm-banners] fetch failed, returning []:', err);
+    console.warn('[pm-banners] fetch failed, returning []:', err);
     return [];
   }
 }
