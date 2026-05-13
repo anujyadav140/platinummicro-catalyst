@@ -1,0 +1,96 @@
+{
+  "updated": [
+    {
+      "sku": "CCFS6706T",
+      "modifierId": 154,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS5404T",
+      "modifierId": 155,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS5402T",
+      "modifierId": 156,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6702T",
+      "modifierId": 157,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6704T",
+      "modifierId": 158,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCFS6712X",
+      "modifierId": 159,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6804T",
+      "modifierId": 160,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6806T",
+      "modifierId": 161,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6808T",
+      "modifierId": 162,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6810T",
+      "modifierId": 163,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCFS6806X",
+      "modifierId": 164,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCFS6812X",
+      "modifierId": 165,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6702TV2",
+      "modifierId": 166,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6704TV2",
+      "modifierId": 167,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    },
+    {
+      "sku": "CCAS6706TV2",
+      "modifierId": 153,
+      "valuesUpdated": 1,
+      "discountPct": 3
+    }
+  ],
+  "skipped": [],
+  "failed": []
+}

@@ -226,28 +226,65 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     [activeBundlePicks],
   );
 
-  // Final price preview: (base + bundle add-on) × cart qty. Falls back to
-  // the BC-formatted price label when we don't have a numeric value
-  // (e.g. "Quote pricing" products with no priceValue).
+  // Bundle base-discount % — mirrors the legacy "Bundle and get N% off"
+  // math where picking ANY real option shaves N% off the base price. Take
+  // the LARGEST percent across modifiers; if zero modifiers have a picked
+  // value, the discount is 0 (no incentive triggered yet).
+  const baseDiscountPct = useMemo(() => {
+    if (activeBundlePicks.length === 0) return 0;
+    let max = 0;
+    for (const m of product.bundleModifiers ?? []) {
+      const state = bundleState[m.modifierId];
+      if (!state || state.selectedValueId === null) continue;
+      if ((m.baseDiscountPercent ?? 0) > max) max = m.baseDiscountPercent ?? 0;
+    }
+    return max;
+  }, [product.bundleModifiers, bundleState, activeBundlePicks.length]);
+
+  // Discounted base unit price — what the base contributes per cart qty.
+  const discountedBaseUnit = useMemo(() => {
+    if (typeof product.priceValue !== 'number') return 0;
+    return product.priceValue * (1 - baseDiscountPct / 100);
+  }, [product.priceValue, baseDiscountPct]);
+
+  // Final price preview: (discounted base + bundle add-ons) × cart qty.
+  // Falls back to the BC-formatted price label when we don't have a numeric
+  // value (e.g. "Quote pricing" products with no priceValue).
   const previewTotalLabel = useMemo(() => {
     if (typeof product.priceValue !== 'number') return product.priceLabel;
-    const total = (product.priceValue + bundleAddOnPerBase) * Math.max(1, qty);
+    const total = (discountedBaseUnit + bundleAddOnPerBase) * Math.max(1, qty);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      maximumFractionDigits: 0,
     }).format(total);
-  }, [product.priceValue, product.priceLabel, bundleAddOnPerBase, qty]);
+  }, [product.priceValue, product.priceLabel, discountedBaseUnit, bundleAddOnPerBase, qty]);
+
+  // Formatted discounted base label (used in the price sublabel so the user
+  // sees exactly what the base contributes after the bundle discount).
+  const discountedBaseLabel = useMemo(() => {
+    if (typeof product.priceValue !== 'number') return undefined;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(discountedBaseUnit);
+  }, [product.priceValue, discountedBaseUnit]);
 
   const handleAddToCart = () => {
-    // First line: the base product.
+    // First line: the base product. When a bundle is selected, swap the
+    // unit price for the discounted version so the cart subtotal mirrors
+    // the PDP preview (and the legacy site's checkout). The BC modifier's
+    // percentage adjuster handles the same math at BC checkout.
+    const baseUnitPrice =
+      baseDiscountPct > 0 && discountedBaseLabel
+        ? discountedBaseLabel
+        : product.priceLabel;
     const lines = [
       {
         sku: product.sku,
         qty,
         title: product.name,
         imageUrl: heroImageUrl,
-        unitPrice: product.priceLabel,
+        unitPrice: baseUnitPrice,
         brand: product.brand,
         inStock: product.inStock,
         productEntityId: product.id,
@@ -343,8 +380,12 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
             />
           </div>
 
-          {/* RIGHT — Info pane (details + buy-box card) */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,260px)] md:gap-10">
+          {/* RIGHT — Info pane (details + buy-box card).
+              Buy-box was previously 260px which crushed the bundle option
+              labels. 360px gives the bundle card enough room for a 4TB
+              WD SSD title without aggressive truncation while leaving the
+              details column its remaining space. */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:gap-10">
             {/* DETAILS column */}
             <div className="flex flex-col">
               <h1 className="text-[24px] font-bold leading-[1.25] tracking-[-0.012em] text-pm-ink-900">
@@ -391,8 +432,22 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                       {previewTotalLabel}
                     </div>
                     {bundleAddOnPerBase > 0 && (
-                      <div className="mt-1.5 text-[12px] text-pm-ink-500">
-                        Includes {product.priceLabel} base + bundle add-ons
+                      <div className="mt-1.5 text-[12px] leading-snug text-pm-ink-500">
+                        {baseDiscountPct > 0 && discountedBaseLabel ? (
+                          <>
+                            Bundle discount applied:{' '}
+                            <span className="line-through">
+                              {product.priceLabel}
+                            </span>{' '}
+                            →{' '}
+                            <span className="font-semibold text-pm-ink-700">
+                              {discountedBaseLabel}
+                            </span>{' '}
+                            base ({baseDiscountPct}% off) + bundle add-ons
+                          </>
+                        ) : (
+                          <>Includes {product.priceLabel} base + bundle add-ons</>
+                        )}
                       </div>
                     )}
                   </>

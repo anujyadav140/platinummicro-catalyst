@@ -72,8 +72,30 @@ export interface PmBundleModifier {
   displayName: string;
   /** When true, "None" can NOT be picked — user must select an option */
   isRequired: boolean;
+  /**
+   * Bundle-discount percentage parsed from `displayName`. When the admin
+   * names the modifier "Bundle and get N% off", picking ANY real option
+   * shaves N% off the BASE product price (the linked option still adds
+   * at its standalone price). Mirrors the legacy platinummicro.com math.
+   * `null` when the display name doesn't follow the pattern, in which
+   * case no discount is applied.
+   */
+  baseDiscountPercent: number | null;
   /** All admin-configured option values for this modifier */
   values: PmBundleOption[];
+}
+
+/**
+ * Pulls the "N% off" out of a modifier display name. Returns `null` for
+ * names that don't follow the convention so the UI can render the modifier
+ * without applying any phantom discount.
+ */
+function parseBaseDiscountPercent(displayName: string): number | null {
+  const m = displayName.match(/(\d+(?:\.\d+)?)\s*%\s*off/i);
+  if (!m) return null;
+  const pct = Number(m[1]);
+  if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) return null;
+  return pct;
 }
 
 export interface PmProductDetail {
@@ -279,10 +301,12 @@ const PmBundleLinkedProductsQuery = graphql(`
 
 function formatPrice(price?: { value: number; currencyCode: string } | null): string | undefined {
   if (!price) return undefined;
+  // Intl currency defaults to 2 fraction digits — preserves $X.99 endings the
+  // BC admin enters. The legacy stripped-cents look ("$530") was a bug, not a
+  // brand choice.
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: price.currencyCode,
-    maximumFractionDigits: 0,
   }).format(price.value);
 }
 
@@ -574,6 +598,7 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
             modifierId: opt.entityId,
             displayName: opt.displayName,
             isRequired: opt.isRequired,
+            baseDiscountPercent: parseBaseDiscountPercent(opt.displayName),
             values,
           });
         }

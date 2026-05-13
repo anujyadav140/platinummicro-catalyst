@@ -72,10 +72,11 @@ const PmFeaturedProductsQuery = graphql(`
 
 function formatPrice(price?: { value: number; currencyCode: string } | null): string | undefined {
   if (!price) return undefined;
+  // Always show full cents — never round. BC merchants set $X.99 endings
+  // deliberately and chopping them off misrepresents the price.
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: price.currencyCode,
-    maximumFractionDigits: 0,
   }).format(price.value);
 }
 

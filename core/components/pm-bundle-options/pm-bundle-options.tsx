@@ -13,14 +13,18 @@
  * price tiers in BC, so the same product price flows through both the
  * standalone PDP and the bundle UI. No discount math in code.
  *
+ * Layout: each linked-product option is a single `<li>`. When the option
+ * is checked, its `<li>` expands in place to reveal a quantity stepper
+ * and the live add-on subtotal — so the x1 → xN affordance is visually
+ * attached to the bundle item it controls, not floating below the list.
+ *
  * State shape — managed by the parent (PDP) so it can compute the
  * total + thread the picks into the Add-to-Cart payload:
  *
  *   selectedValueId: number | null   // null = "None" (no bundle item)
  *   quantity:        number          // ignored when selectedValueId === null
  *
- * Out-of-stock options stay clickable but flagged — admin gets a clear
- * "WD 4TB SSD — Out of stock" hint in the radio row. Inventory checks
+ * Out-of-stock options stay clickable but flagged. Inventory checks
  * happen authoritatively at checkout (BC); this is a UX preview.
  */
 
@@ -39,10 +43,11 @@ export interface PmBundleOptionsProps {
 }
 
 function formatUSD(value: number): string {
+  // Keep cents — Asustor + WD bundle prices end in .99 and the legacy site
+  // shows them in full.
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
   }).format(value);
 }
 
@@ -52,14 +57,6 @@ export function PmBundleOptions({
   quantity,
   onChange,
 }: PmBundleOptionsProps) {
-  const selectedValue: PmBundleOption | undefined = modifier.values.find(
-    (v) => v.valueId === selectedValueId,
-  );
-  const showQty = !!selectedValue;
-  const bundleTotal = selectedValue
-    ? selectedValue.productPriceValue * Math.max(1, quantity)
-    : 0;
-
   const select = (valueId: number | null) => {
     // When the user re-selects "None", reset qty back to 1 so the next
     // option pick starts from a sane state.
@@ -85,11 +82,10 @@ export function PmBundleOptions({
 
       <ul className="flex flex-col">
         {/* "None" — synthesized client-side. BC's ProductPickList can't
-            hold a value without a productId, so this radio row exists
-            only in the UI as the explicit opt-out. The modifier itself
-            is optional (isRequired=false) so this is allowed. Hidden
-            when the admin marks the modifier required, since the user
-            must then pick a real option. */}
+            hold a value without a productId, so this row exists only in
+            the UI as the explicit opt-out. Hidden when the admin marks
+            the modifier required, since the user must then pick a real
+            option. */}
         {!modifier.isRequired && (
           <BundleOptionRow
             checked={selectedValueId === null}
@@ -99,70 +95,42 @@ export function PmBundleOptions({
           />
         )}
 
-        {modifier.values.map((v) => (
-          <BundleOptionRow
-            key={v.valueId}
-            checked={selectedValueId === v.valueId}
-            onSelect={() => select(v.valueId)}
-            label={v.label}
-            sublabel={v.productSku}
-            priceLabel={`${v.productPriceLabel} each`}
-            imageUrl={v.productImageUrl}
-            inStock={v.productInStock}
-          />
-        ))}
+        {modifier.values.map((v) => {
+          const isSelected = selectedValueId === v.valueId;
+          return (
+            <BundleOptionRow
+              key={v.valueId}
+              checked={isSelected}
+              onSelect={() => select(v.valueId)}
+              label={v.label}
+              sublabel={v.productSku}
+              priceLabel={`${v.productPriceLabel} each`}
+              imageUrl={v.productImageUrl}
+              inStock={v.productInStock}
+              // Qty stepper appears inline inside the selected row only.
+              // This is what the user expects: "this bundle item × N".
+              expandedQty={
+                isSelected
+                  ? {
+                      quantity,
+                      onIncrement: () => setQty(quantity + 1),
+                      onDecrement: () => setQty(quantity - 1),
+                      onInput: (n) => setQty(n),
+                      addOnLabel: formatUSD(
+                        v.productPriceValue * Math.max(1, quantity),
+                      ),
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
       </ul>
-
-      {/* Quantity row — only shows when a real option (not "None") is
-          picked. Mirrors the qty stepper used elsewhere (cart row, PDP
-          main qty), but keyed to the BUNDLE option, not the cart line. */}
-      {showQty && selectedValue && (
-        <div className="flex items-center justify-between gap-3 border-t border-pm-ink-200 bg-white px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] font-semibold text-pm-ink-700">
-              How many?
-            </span>
-            <div className="flex items-stretch overflow-hidden rounded-md border border-pm-ink-200">
-              <button
-                type="button"
-                onClick={() => setQty(quantity - 1)}
-                disabled={quantity <= 1}
-                aria-label="Decrease bundle quantity"
-                className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus size={14} strokeWidth={2} className="mx-auto" />
-              </button>
-              <input
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(e) => setQty(Number(e.target.value))}
-                aria-label="Bundle quantity"
-                className="w-12 border-x border-pm-ink-200 text-center text-[13px] font-semibold text-pm-ink-900 outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setQty(quantity + 1)}
-                aria-label="Increase bundle quantity"
-                className="h-8 w-8 text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
-              >
-                <Plus size={14} strokeWidth={2} className="mx-auto" />
-              </button>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[11px] text-pm-ink-500">Bundle add-on</div>
-            <div className="text-[15px] font-bold text-pm-navy-deep">
-              +{formatUSD(bundleTotal)}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Single radio-style row inside the option list ────────────────────────
+// ── Single option row + optional inline qty expansion ─────────────────────
 
 interface BundleOptionRowProps {
   checked: boolean;
@@ -172,6 +140,15 @@ interface BundleOptionRowProps {
   priceLabel?: string;
   imageUrl?: string;
   inStock?: boolean;
+  // When provided, the row is the selected one and renders the inline
+  // qty stepper + add-on subtotal beneath the radio header.
+  expandedQty?: {
+    quantity: number;
+    onIncrement: () => void;
+    onDecrement: () => void;
+    onInput: (n: number) => void;
+    addOnLabel: string;
+  };
 }
 
 function BundleOptionRow({
@@ -182,21 +159,25 @@ function BundleOptionRow({
   priceLabel,
   imageUrl,
   inStock,
+  expandedQty,
 }: BundleOptionRowProps) {
   return (
-    <li>
+    <li
+      className={`border-b border-pm-ink-200 last:border-b-0 ${
+        checked ? 'bg-pm-tan-pale' : 'bg-white'
+      }`}
+    >
+      {/* Header — radio + image + label/sku/price. The full row is the
+          click target so users can pick by anywhere along the line. */}
       <button
         type="button"
         onClick={onSelect}
         aria-pressed={checked}
-        className={`flex w-full items-center gap-3 border-b border-pm-ink-200 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-pm-ink-100/40 ${
-          checked ? 'bg-pm-tan-pale' : 'bg-white'
-        }`}
+        className="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-pm-ink-100/40"
       >
-        {/* Radio indicator */}
         <span
           aria-hidden
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
             checked
               ? 'border-pm-terracotta bg-pm-terracotta text-white'
               : 'border-pm-ink-300 bg-white'
@@ -205,44 +186,101 @@ function BundleOptionRow({
           {checked && <Check size={12} strokeWidth={3} />}
         </span>
 
-        {/* Image — only for real options */}
         {imageUrl && (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
             <Image
               src={imageUrl}
               alt=""
-              width={48}
-              height={48}
-              sizes="48px"
+              width={40}
+              height={40}
+              sizes="40px"
               className="h-full w-full object-contain p-1"
             />
           </div>
         )}
 
-        {/* Label + sublabel */}
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="line-clamp-2 text-[13px] font-semibold leading-[1.35] text-pm-ink-900">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="line-clamp-2 break-words text-[13px] font-semibold leading-[1.35] text-pm-ink-900">
             {label}
           </span>
-          {sublabel && (
-            <span className="text-[11px] text-pm-ink-500">
-              {sublabel}
-              {inStock === false && (
-                <span className="ml-2 font-semibold text-pm-warning">
-                  Out of stock
-                </span>
-              )}
-            </span>
-          )}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[11px]">
+            {sublabel && (
+              <span className="truncate text-pm-ink-500">
+                {sublabel}
+                {inStock === false && (
+                  <span className="ml-1 font-semibold text-pm-warning">
+                    • Out of stock
+                  </span>
+                )}
+              </span>
+            )}
+            {priceLabel && (
+              <span className="shrink-0 text-[12px] font-semibold text-pm-navy-deep">
+                {priceLabel}
+              </span>
+            )}
+          </div>
         </div>
-
-        {/* Price (right-aligned) */}
-        {priceLabel && (
-          <span className="shrink-0 text-[12px] font-semibold text-pm-navy-deep">
-            {priceLabel}
-          </span>
-        )}
       </button>
+
+      {/* Inline qty expansion — only on the selected row. Anchored to the
+          row visually so the user sees "this WD SSD × N" as one thing.
+          Click handlers stopPropagation so qty taps don't bubble up to
+          the row-level onSelect. */}
+      {expandedQty && (
+        <div className="flex items-center justify-between gap-3 border-t border-pm-ink-200/60 bg-white/70 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-semibold text-pm-ink-700">
+              Quantity
+            </span>
+            <div
+              className="flex items-stretch overflow-hidden rounded-md border border-pm-ink-200 bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  expandedQty.onDecrement();
+                }}
+                disabled={expandedQty.quantity <= 1}
+                aria-label="Decrease bundle quantity"
+                className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Minus size={14} strokeWidth={2} className="mx-auto" />
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={expandedQty.quantity}
+                onChange={(e) => expandedQty.onInput(Number(e.target.value))}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Bundle quantity"
+                className="w-12 border-x border-pm-ink-200 text-center text-[13px] font-semibold text-pm-ink-900 outline-none"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  expandedQty.onIncrement();
+                }}
+                aria-label="Increase bundle quantity"
+                className="h-8 w-8 text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
+              >
+                <Plus size={14} strokeWidth={2} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wide text-pm-ink-500">
+              Add-on
+            </div>
+            <div className="text-[14px] font-bold text-pm-navy-deep">
+              +{expandedQty.addOnLabel}
+            </div>
+          </div>
+        </div>
+      )}
     </li>
   );
 }

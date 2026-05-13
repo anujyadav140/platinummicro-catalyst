@@ -70,10 +70,11 @@ function parsePrice(label?: string): number | null {
 }
 
 function formatUSD(n: number): string {
+  // Always show full cents — never round. Line items end in .99 and the cart
+  // total must match the checkout subtotal to the cent.
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
   }).format(n);
 }
 
