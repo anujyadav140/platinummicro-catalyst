@@ -60,6 +60,23 @@ export interface PmBundleBasePriceAdjuster {
 }
 
 /**
+ * One BC bulk-pricing tier on a bundle's linked product. Exactly ONE of
+ * `fixedPrice` / `percentOff` is set per tier; the UI picks whichever
+ * is non-null. We normalize BC's two practical tier types into these
+ * two fields (the third schema type `BulkPricingRelativePriceDiscount`
+ * is also folded into `fixedPrice` — see the assembly code for the
+ * BC quirk that makes that the right call). Tiers are sorted by
+ * minimumQuantity ascending so the resolver scans linearly.
+ */
+export interface PmBundleBulkTier {
+  minimumQuantity: number;
+  /** undefined means "no upper bound" */
+  maximumQuantity?: number;
+  fixedPrice?: number;
+  percentOff?: number;
+}
+
+/**
  * A single bundleable option — sourced from a BC ProductPickList modifier
  * value, hydrated with the linked product's price + image + stock + any
  * BC-configured base-price adjuster.
@@ -86,6 +103,15 @@ export interface PmBundleOption {
   productInStock: boolean;
   /** What BC says picking this option does to the BASE price. See above. */
   basePriceAdjuster?: PmBundleBasePriceAdjuster;
+  /**
+   * BC bulk-pricing tiers configured on this linked product. When set,
+   * the bundle UI uses these to derive the per-unit price at each qty
+   * instead of multiplying `productPriceValue × qty` blindly. The
+   * single WD SSD, for example, is $529.99 at qty 1 (base price) but
+   * $619.99 at qty 2+ via a fixed-price tier — matching the legacy
+   * Pack-of-N pricing the admin set up.
+   */
+  bulkPricingTiers?: PmBundleBulkTier[];
 }
 
 export interface PmBundleModifier {
@@ -287,6 +313,25 @@ const PmBundleLinkedProductsQuery = graphql(`
               price {
                 value
                 currencyCode
+              }
+              # Bulk-pricing tiers — let BC tell us the per-unit price
+              # at qty 2+ so we don't have to hardcode the legacy
+              # Pack-of-N numbers. Three concrete shapes implement
+              # BulkPricingTier (fixed price, percentage off, relative
+              # discount) — we query all three and the UI picks
+              # whichever populated. Lives on Prices, not Product.
+              bulkPricing {
+                minimumQuantity
+                maximumQuantity
+                ... on BulkPricingFixedPriceDiscount {
+                  price
+                }
+                ... on BulkPricingPercentageDiscount {
+                  percentOff
+                }
+                ... on BulkPricingRelativePriceDiscount {
+                  priceAdjustment
+                }
               }
             }
             defaultImage {
@@ -639,6 +684,41 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
       for (const edge of linkedData?.site?.products?.edges ?? []) {
         const p = edge?.node;
         if (!p) continue;
+        // Normalize BC's three concrete BulkPricingTier shapes into one
+        // discriminated-union friendly object, sorted by minimumQuantity
+        // ascending so the resolver scans top-down.
+        const tiers: PmBundleBulkTier[] = (p.prices?.bulkPricing ?? [])
+          .map((t) => {
+            if (!t) return null;
+            const base: PmBundleBulkTier = {
+              minimumQuantity: t.minimumQuantity,
+              maximumQuantity:
+                t.maximumQuantity == null ? undefined : t.maximumQuantity,
+            };
+            if ('price' in t && typeof t.price === 'number') {
+              base.fixedPrice = t.price;
+            } else if (
+              'priceAdjustment' in t &&
+              typeof t.priceAdjustment === 'number'
+            ) {
+              // BC quirk: rules created via REST `type: 'price'` (fixed
+              // per-unit price) surface here as
+              // BulkPricingRelativePriceDiscount.priceAdjustment, despite
+              // the schema docstring claiming it's "subtracted from
+              // original". Empirically (verified against the WD SSD
+              // tier we configured), BC's pricing engine treats the
+              // value as the absolute per-unit price for the tier.
+              // So we normalize it onto our `fixedPrice` field.
+              base.fixedPrice = t.priceAdjustment;
+            } else if ('percentOff' in t && typeof t.percentOff === 'number') {
+              base.percentOff = t.percentOff;
+            } else {
+              return null;
+            }
+            return base;
+          })
+          .filter((t): t is PmBundleBulkTier => t != null)
+          .sort((a, b) => a.minimumQuantity - b.minimumQuantity);
         productById.set(p.entityId, {
           valueId: 0, // filled in per-option below
           label: '', // filled in per-option below
@@ -651,6 +731,7 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
             formatPrice(p.prices?.price) ?? '',
           productImageUrl: p.defaultImage?.url ?? undefined,
           productInStock: p.inventory?.isInStock ?? false,
+          bulkPricingTiers: tiers.length > 0 ? tiers : undefined,
         });
       }
 

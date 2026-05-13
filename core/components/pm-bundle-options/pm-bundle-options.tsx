@@ -51,6 +51,34 @@ function formatUSD(value: number): string {
   }).format(value);
 }
 
+/**
+ * Resolve the per-unit price for a bundle option at the given qty,
+ * honoring any BC bulk-pricing tiers configured on the linked product.
+ *
+ * Without tiers the base price applies regardless of qty. With tiers,
+ * we scan ascending and apply the LAST tier whose [min, max] window
+ * contains the qty — matching BC's own pricing engine semantics.
+ *
+ *   - fixedPrice: per-unit price replaces the base
+ *   - percentOff: discount as % off base
+ */
+export function resolveUnitPriceAtQty(
+  option: PmBundleOption,
+  qty: number,
+): number {
+  const base = option.productPriceValue;
+  const tiers = option.bulkPricingTiers ?? [];
+  let perUnit = base;
+  for (const t of tiers) {
+    const fitsLower = qty >= t.minimumQuantity;
+    const fitsUpper = t.maximumQuantity == null || qty <= t.maximumQuantity;
+    if (!fitsLower || !fitsUpper) continue;
+    if (t.fixedPrice != null) perUnit = t.fixedPrice;
+    else if (t.percentOff != null) perUnit = base * (1 - t.percentOff / 100);
+  }
+  return perUnit;
+}
+
 export function PmBundleOptions({
   modifier,
   selectedValueId,
@@ -97,6 +125,13 @@ export function PmBundleOptions({
 
         {modifier.values.map((v) => {
           const isSelected = selectedValueId === v.valueId;
+          // Per-unit price at THIS row's currently-displayed qty. For the
+          // unselected resting state we show the base ("$X each"); when
+          // selected, the inline qty expander also uses the tier-resolved
+          // number so the user sees the price flex as they bump the qty.
+          const effectiveQty = isSelected ? Math.max(1, quantity) : 1;
+          const unitPriceAtQty = resolveUnitPriceAtQty(v, effectiveQty);
+          const rowLineTotal = unitPriceAtQty * effectiveQty;
           return (
             <BundleOptionRow
               key={v.valueId}
@@ -104,7 +139,7 @@ export function PmBundleOptions({
               onSelect={() => select(v.valueId)}
               label={v.label}
               sublabel={v.productSku}
-              priceLabel={`${v.productPriceLabel} each`}
+              priceLabel={`${formatUSD(unitPriceAtQty)} each`}
               imageUrl={v.productImageUrl}
               inStock={v.productInStock}
               // Qty stepper appears inline inside the selected row only.
@@ -116,9 +151,7 @@ export function PmBundleOptions({
                       onIncrement: () => setQty(quantity + 1),
                       onDecrement: () => setQty(quantity - 1),
                       onInput: (n) => setQty(n),
-                      addOnLabel: formatUSD(
-                        v.productPriceValue * Math.max(1, quantity),
-                      ),
+                      addOnLabel: formatUSD(rowLineTotal),
                     }
                   : undefined
               }

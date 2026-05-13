@@ -51,7 +51,10 @@ import {
 } from 'lucide-react';
 import { usePmQuote } from '~/lib/pm-quote-store';
 import { usePmRecentlyViewed } from '~/lib/pm-recently-viewed-store';
-import { PmBundleOptions } from '~/components/pm-bundle-options';
+import {
+  PmBundleOptions,
+  resolveUnitPriceAtQty,
+} from '~/components/pm-bundle-options';
 import { PmProductGallery } from '~/components/pm-product-gallery';
 import { PmProductGrid } from '~/components/pm-product-grid';
 import { PmAddToListButton } from '~/components/pm-add-to-list-menu';
@@ -200,8 +203,10 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
   })();
 
   // Materialize the active bundle picks — each modifier with a non-"None"
-  // selection becomes a (linkedProduct, qty, adjuster) tuple. Used for
-  // both the live total preview and the Add-to-Cart payload.
+  // selection becomes a (linkedProduct, qty, adjuster, tieredUnitPrice)
+  // tuple. The tiered unit price is resolved against BC's bulk-pricing
+  // rules so picking qty=2 on the WD SSD reflects the $619.99/each tier
+  // BC has configured (not the $529.99 base-of-1 price).
   const activeBundlePicks = useMemo(() => {
     const picks: Array<{
       productId: number;
@@ -209,8 +214,10 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
       name: string;
       href: string;
       imageUrl?: string;
-      priceLabel: string;
-      priceValue: number;
+      /** Per-unit price after applying BC bulk-pricing tiers at this qty */
+      unitPriceValue: number;
+      /** Formatted per-unit price string for the cart line */
+      unitPriceLabel: string;
       quantity: number;
       inStock: boolean;
       basePriceAdjuster?: { type: 'percentage' | 'relative'; value: number };
@@ -220,15 +227,21 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
       if (!state || state.selectedValueId === null) continue;
       const value = m.values.find((v) => v.valueId === state.selectedValueId);
       if (!value) continue;
+      const qtyHere = Math.max(1, state.quantity);
+      const unitPriceValue = resolveUnitPriceAtQty(value, qtyHere);
+      const unitPriceLabel = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(unitPriceValue);
       picks.push({
         productId: value.productId,
         sku: value.productSku,
         name: value.productName,
         href: value.productHref,
         imageUrl: value.productImageUrl,
-        priceLabel: value.productPriceLabel,
-        priceValue: value.productPriceValue,
-        quantity: state.quantity,
+        unitPriceValue,
+        unitPriceLabel,
+        quantity: qtyHere,
         inStock: value.productInStock,
         basePriceAdjuster: value.basePriceAdjuster,
       });
@@ -236,10 +249,15 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     return picks;
   }, [product.bundleModifiers, bundleState]);
 
-  // Bundle add-on $ contribution per single "cart qty" of the base — the
-  // PDP buy-box then multiplies this by `qty` for the final total preview.
+  // Bundle add-on $ contribution per single "cart qty" of the base — sum
+  // of (tiered unit price × bundle qty) for each pick. The PDP buy-box
+  // multiplies this by the cart qty for the final preview.
   const bundleAddOnPerBase = useMemo(
-    () => activeBundlePicks.reduce((sum, p) => sum + p.priceValue * p.quantity, 0),
+    () =>
+      activeBundlePicks.reduce(
+        (sum, p) => sum + p.unitPriceValue * p.quantity,
+        0,
+      ),
     [activeBundlePicks],
   );
 
@@ -310,7 +328,10 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
         qty: pick.quantity * qty,
         title: pick.name,
         imageUrl: pick.imageUrl,
-        unitPrice: pick.priceLabel,
+        // Tier-resolved per-unit price — so the cart subtotal matches
+        // the PDP preview (and BC checkout, since BC applies the same
+        // bulk-pricing rule at its end).
+        unitPrice: pick.unitPriceLabel,
         brand: undefined,
         inStock: pick.inStock,
         productEntityId: pick.productId,

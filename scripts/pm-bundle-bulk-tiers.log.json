@@ -1,0 +1,38 @@
+{
+  "configured": [
+    {
+      "sku": "CCWDS400T4B0E",
+      "baseQty1Price": 529.99,
+      "tierQty2PlusPrice": 619.99,
+      "derivedFrom": [
+        {
+          "packQty": 2,
+          "perUnit": 619.995,
+          "total": 1239.99
+        },
+        {
+          "packQty": 3,
+          "perUnit": 619.9966666666667,
+          "total": 1859.99
+        },
+        {
+          "packQty": 4,
+          "perUnit": 619.9975,
+          "total": 2479.99
+        },
+        {
+          "packQty": 5,
+          "perUnit": 619.9979999999999,
+          "total": 3099.99
+        },
+        {
+          "packQty": 6,
+          "perUnit": 619.9983333333333,
+          "total": 3719.99
+        }
+      ]
+    }
+  ],
+  "skipped": [],
+  "failed": []
+}
