@@ -45,6 +45,15 @@ const makeswiftBaseUrl =
 
 const b2bNinjaEnabled = !!process.env.NEXT_PUBLIC_B2B_NINJA_STORE_ID;
 
+// Dev runs on http://localhost — turning on `upgrade-insecure-requests`
+// in that context tells the browser to force-upgrade EVERY same-origin
+// fetch (including our own /api/* routes) to https://, which then fails
+// because there's no TLS on localhost. Net effect: every client-side
+// fetch dies with a generic "Failed to fetch" error in the console.
+// Only enable the directive in production builds where the page itself
+// is already on HTTPS.
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Iframe-ancestor policy is a separate concern from script/style: when
 // Makeswift is on, BC's admin previews our pages by embedding them.
 // Otherwise nobody should be allowed to iframe us.
@@ -148,7 +157,9 @@ export const cspHeader = builder({
     // Restricts where <base> tags can rewrite resolution to.
     baseUri: ["'self'"],
 
-    // Force HTTPS on any http: subresource. Cheap, safe, broadly compatible.
-    upgradeInsecureRequests: true,
+    // Force HTTPS on any http: subresource — production only. See the
+    // `isProduction` comment at the top of the file for why this can't
+    // ship in dev.
+    upgradeInsecureRequests: isProduction,
   },
 });
