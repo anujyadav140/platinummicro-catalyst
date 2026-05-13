@@ -1,0 +1,151 @@
+{
+  "created": [
+    {
+      "sku": "CCFS6706T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS5404T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS5402T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6702T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6704T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCFS6712X",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6804T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6806T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6808T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6810T",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCFS6806X",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCFS6812X",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6702TV2",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    },
+    {
+      "sku": "CCAS6704TV2",
+      "options": [
+        {
+          "label": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s",
+          "productId": 4384,
+          "linkedSku": "CCWDS400T4B0E"
+        }
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "sku": "CCAS6706TV2",
+      "modifierId": 153
+    }
+  ],
+  "failed": []
+}

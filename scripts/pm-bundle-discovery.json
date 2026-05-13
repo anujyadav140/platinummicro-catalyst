@@ -1,0 +1,289 @@
+[
+  {
+    "bcProductId": 1270,
+    "sku": "CCAS6510T",
+    "name": "Asustor AS6510T Lockerstor 10 Enterprise 2.1GHz Quad-Core 10-Bay Diskless NAS",
+    "slug": "/asustor-as6510t-lockerstor-10-enterprise-2-1ghz-quad-core-10-bay-diskless-nas/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6510t-lockerstor-10-enterprise-2-1ghz-quad-core-10-bay-diskless-nas/",
+    "noBundleModifierOnLegacy": true
+  },
+  {
+    "bcProductId": 1271,
+    "sku": "CCAS6508T",
+    "name": "Asustor AS6508T Lockerstor 8 Enterprise 2.1GHz Quad-Core 8-Bay Diskless NAS Network Attached Storage",
+    "slug": "/asustor-as6508t-lockerstor-8-enterprise-2-1ghz-quad-core-8-bay-diskless-nas-network-attached-storage/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6508t-lockerstor-8-enterprise-2-1ghz-quad-core-8-bay-diskless-nas-network-attached-storage/",
+    "noBundleModifierOnLegacy": true
+  },
+  {
+    "bcProductId": 3135,
+    "sku": "CCFS6706T",
+    "name": "Asustor FS6706T Flashstor 6, 6 Bay NAS, Quad-Core 2.0GHz, Dual 2.5GbE Ports, 4GB RAM DDR4, Six M.2 SSD Slots, (Diskless)",
+    "slug": "/asustor-fs6706t-flashstor-6-6-bay-nas-quad-core-2-0ghz-dual-2-5gbe-ports-4gb-ram-ddr4-six-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-fs6706t-flashstor-6-6-bay-nas-quad-core-2-0ghz-dual-2-5gbe-ports-4gb-ram-ddr4-six-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 7,
+    "options": [
+      {
+        "legacyValueAttr": "754",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3136,
+    "sku": "CCAS5404T",
+    "name": "Asustor AS5404T Nimbustor 4 Gen2  4 Bay NAS,Quad-Core 2.0GHz CPU,Dual 2.5GbE Ports,4GB DDR4,4x M.2 SSD Slots (Diskless)",
+    "slug": "/asustor-as5404t-nimbustor-4-gen2-4-bay-nas-quad-core-2-0ghz-cpu-dual-2-5gbe-ports-4gb-ddr4-4x-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as5404t-nimbustor-4-gen2-4-bay-nas-quad-core-2-0ghz-cpu-dual-2-5gbe-ports-4gb-ddr4-4x-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "696",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3137,
+    "sku": "CCAS5402T",
+    "name": "Asustor AS5402T Nimbustor 2 Gen2  2 Bay NAS,Quad-Core 2.0GHz CPU,Dual 2.5GbE Ports,4GB DDR4,4x M.2 SSD Slots (Diskless)",
+    "slug": "/asustor-as5402t-nimbustor-2-gen2-2-bay-nas-quad-core-2-0ghz-cpu-dual-2-5gbe-ports-4gb-ddr4-4x-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as5402t-nimbustor-2-gen2-2-bay-nas-quad-core-2-0ghz-cpu-dual-2-5gbe-ports-4gb-ddr4-4x-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "692",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3138,
+    "sku": "CCAS6706T",
+    "name": "Asustor AS6706T LOCKERSTOR 6 Gen2, Small Business 6-Bays NAS, Quad-Core CPU, 2.5GbE Port, 8GB DDR4 RAM, Network Attached Storage (Diskless)",
+    "slug": "/asustor-as6706t-lockerstor-6-gen2-small-business-6-bays-nas-quad-core-cpu-2-5gbe-port-8gb-ddr4-ram-network-attached-storage-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6706t-lockerstor-6-gen2-small-business-6-bays-nas-quad-core-cpu-2-5gbe-port-8gb-ddr4-ram-network-attached-storage-diskless/",
+    "noBundleModifierOnLegacy": true
+  },
+  {
+    "bcProductId": 3139,
+    "sku": "CCAS6702T",
+    "name": "Asustor AS6702T LOCKERSTOR 2 Gen2, Small Business 2-Bays NAS, Quad-Core CPU, Dual 2.5/10GbE Port, 4GB DDR4 RAM, Network Attached Storage (Diskless)",
+    "slug": "/asustor-as6702t-lockerstor-2-gen2-small-business-2-bays-nas-quad-core-cpu-dual-2-5-10gbe-port-4gb-ddr4-ram-network-attached-storage-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6702t-lockerstor-2-gen2-small-business-2-bays-nas-quad-core-cpu-dual-2-5-10gbe-port-4gb-ddr4-ram-network-attached-storage-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "700",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3140,
+    "sku": "CCAS6704T",
+    "name": "Asustor AS6704T LOCKERSTOR 4 Gen2, Small Business 4-Bays NAS, Quad-Core CPU, Dual 2.5/10GbE Port, 4GB DDR4 RAM, Network Attached Storage (Diskless)",
+    "slug": "/asustor-as6704t-lockerstor-4-gen2-small-business-4-bays-nas-quad-core-cpu-dual-2-5-10gbe-port-4gb-ddr4-ram-network-attached-storage-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6704t-lockerstor-4-gen2-small-business-4-bays-nas-quad-core-cpu-dual-2-5-10gbe-port-4gb-ddr4-ram-network-attached-storage-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "704",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3141,
+    "sku": "CCFS6712X",
+    "name": "Asustor Flashstor 12 Pro, 12 Bay SSD NAS, Quad-Core 2.0GHz, 10GbE Port, 4GB RAM DDR4, twelve M.2 SSD Slots (Diskless) FS6712X",
+    "slug": "/asustor-flashstor-12-pro-12-bay-ssd-nas-quad-core-2-0ghz-10gbe-port-4gb-ram-ddr4-twelve-m-2-ssd-slots-diskless-fs6712x/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-flashstor-12-pro-12-bay-ssd-nas-quad-core-2-0ghz-10gbe-port-4gb-ram-ddr4-twelve-m-2-ssd-slots-diskless-fs6712x/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 7,
+    "options": [
+      {
+        "legacyValueAttr": "766",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3274,
+    "sku": "CCAS3302T44TBHDD",
+    "name": "Asustor AS3302T DRIVESTOR 2 Pro, 2-Bays 36TB (2x22TB) NAS, 2.5GbE Port, 2GB DDR4, Network Attached Storage",
+    "slug": "/raspberry-pi-micro-hdmi-to-hdmi-cable-short-1m-black-sc0546/",
+    "legacyUrl": "https://www.platinummicro.com/raspberry-pi-micro-hdmi-to-hdmi-cable-short-1m-black-sc0546/",
+    "noBundleModifierOnLegacy": true
+  },
+  {
+    "bcProductId": 3630,
+    "sku": "CCAS6804T",
+    "name": "Asustor Lockerstor 4 Gen3 4 Bay NAS, Quad-Core 2.3GHz, 2x 10GbE Ports, 16G ECC DDR5, 4x M.2 SSD Slots (Diskless) AS6804T",
+    "slug": "/asustor-lockerstor-4-gen3-4-bay-nas-quad-core-2-3ghz-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6804t/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-lockerstor-4-gen3-4-bay-nas-quad-core-2-3ghz-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6804t/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "730",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3631,
+    "sku": "CCAS6806T",
+    "name": "Asustor Lockerstor 6 Gen3 6 Bay NAS, Quad-Core 2.3GHz, 2x 10GbE Ports, 16G ECC DDR5, 4x M.2 SSD Slots (Diskless) AS6806T",
+    "slug": "/asustor-lockerstor-6-gen3-6-bay-nas-quad-core-2-3ghz-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6806t/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-lockerstor-6-gen3-6-bay-nas-quad-core-2-3ghz-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6806t/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "734",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3793,
+    "sku": "CCAS6808T",
+    "name": "Asustor Lockerstor 8 Gen3 8 Bay NAS, Quad-Core 2.3GHz CPU,2x 10GbE Ports,16G ECC DDR5,4x M.2 SSD Slots (Diskless) AS6808T",
+    "slug": "/asustor-lockerstor-8-gen3-8-bay-nas-quad-core-2-3ghz-cpu-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6808t/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-lockerstor-8-gen3-8-bay-nas-quad-core-2-3ghz-cpu-2x-10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6808t/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "738",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3795,
+    "sku": "CCAS6810T",
+    "name": "Asustor Lockerstor 10 Gen3 10 Bay NAS, Quad-Core 2.3GHz CPU, 2x10GbE Ports,16G ECC DDR5, 4x M.2 SSD Slots (Diskless) AS6810T",
+    "slug": "/asustor-lockerstor-10-gen3-10-bay-nas-quad-core-2-3ghz-cpu-2x10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6810t/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-lockerstor-10-gen3-10-bay-nas-quad-core-2-3ghz-cpu-2x10gbe-ports-16g-ecc-ddr5-4x-m-2-ssd-slots-diskless-as6810t/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "742",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3805,
+    "sku": "CCFS6806X",
+    "name": "Asustor Flashstor 6 Gen 2 6 Bay NAS, Quad-Core 2.3GHz CPU,10GbE Ports, 8GB RAM DDR5,6x M.2 SSD Slots, (Diskless) FS6806X",
+    "slug": "/asustor-flashstor-6-gen-2-6-bay-nas-quad-core-2-3ghz-cpu-10gbe-ports-8gb-ram-ddr5-6x-m-2-ssd-slots-diskless-fs6806x/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-flashstor-6-gen-2-6-bay-nas-quad-core-2-3ghz-cpu-10gbe-ports-8gb-ram-ddr5-6x-m-2-ssd-slots-diskless-fs6806x/",
+    "modifierDisplayName": "Bundle and get 3% off::",
+    "rawOptionCount": 7,
+    "options": [
+      {
+        "legacyValueAttr": "760",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 3807,
+    "sku": "CCFS6812X",
+    "name": "Asustor Flashstor 12 Pro Gen 2 12 Bay NAS, Quad-Core 2.3GHz CPU, 16GB ECC RAM DDR5,12xM.2 SSD Slots (Diskless) FS6812X",
+    "slug": "/asustor-flashstor-12-pro-gen-2-12-bay-nas-quad-core-2-3ghz-cpu-16gb-ecc-ram-ddr5-12xm-2-ssd-slots-diskless-fs6812x/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-flashstor-12-pro-gen-2-12-bay-nas-quad-core-2-3ghz-cpu-16gb-ecc-ram-ddr5-12xm-2-ssd-slots-diskless-fs6812x/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 7,
+    "options": [
+      {
+        "legacyValueAttr": "772",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 5425,
+    "sku": "CCAS6702TV2",
+    "name": "Asustor AS6702T v2 Lockerstor 2 Gen2+ 2 Bay NAS, Quad-Core 2.0GHz CPU, 2x5GbE ,4GB RAM DDR4, 4x M.2 SSD Slots (Diskless)",
+    "slug": "/asustor-as6702t-v2-lockerstor-2-gen2-2-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-4gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6702t-v2-lockerstor-2-gen2-2-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-4gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "726",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 5427,
+    "sku": "CCAS6704TV2",
+    "name": "Asustor AS6704T v2 Lockerstor 4 Gen2+ 4 Bay NAS, Quad-Core 2.0GHz CPU, 2x5GbE ,4GB RAM DDR4, 4x M.2 SSD Slots (Diskless)",
+    "slug": "/asustor-as6704t-v2-lockerstor-4-gen2-4-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-4gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6704t-v2-lockerstor-4-gen2-4-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-4gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "746",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  },
+  {
+    "bcProductId": 5429,
+    "sku": "CCAS6706TV2",
+    "name": "Asustor AS6706T v2 Lockerstor 6 Gen2+ 6 Bay NAS, Quad-Core 2.0GHz CPU, 2x5GbE ,8GB RAM DDR4, 4x M.2 SSD Slots (Diskless)",
+    "slug": "/asustor-as6706t-v2-lockerstor-6-gen2-6-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-8gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "legacyUrl": "https://www.platinummicro.com/asustor-as6706t-v2-lockerstor-6-gen2-6-bay-nas-quad-core-2-0ghz-cpu-2x5gbe-8gb-ram-ddr4-4x-m-2-ssd-slots-diskless/",
+    "modifierDisplayName": "Bundle and get 3% off:",
+    "rawOptionCount": 5,
+    "options": [
+      {
+        "legacyValueAttr": "750",
+        "legacyProductId": 8185,
+        "imageFilenameSku": "WDS400T4B0E",
+        "labelText": "WD WDS400T4B0E 4TB WD Blue SN5000 NVMe Internal Solid State Drive SSD - PCIe Gen 4.0, M.2 2280, Up to 5,500 MB/s"
+      }
+    ]
+  }
+]
