@@ -206,9 +206,19 @@ const PM_CATEGORY_DESCRIPTORS: Record<string, PmCategoryDescriptor> = {
 };
 
 // We resolve the category by its storefront path (`/servers/`) via
-// `site.route()`, then read products from that Category node. This avoids
-// needing a curated slug → entityId mapping while still giving us real
-// per-category filtering. BC caps `first` at 50.
+// `site.route()`, then read products from that Category node AND from
+// each direct child category. This makes "hub" categories like BUNDLES
+// (which has zero direct products, but 20 across its `AI Solutions` and
+// `NAS Server` children) render correctly without hard-coding any child
+// IDs in app code — when admin adds a 4th child under BUNDLES tomorrow,
+// its products show up automatically.
+//
+// Why one level of `children`, not recursive: BC's GraphQL Storefront
+// API doesn't support arbitrary descendant traversal in a single query,
+// and our category tree is two levels deep in practice. If a future
+// admin adds a 3rd level, refactor this to `searchProducts` with
+// `categoryEntityIds: [parent, ...all_descendants]` and a tree walk.
+// BC caps `first` at 50 — that's fine here, each child gets its own 50.
 const PmCategoryProductsQuery = graphql(`
   query PmCategoryProductsQuery($path: String!) {
     site {
@@ -301,6 +311,66 @@ interface PmCategoryFetchResult {
   bcCategoryImageUrl?: string;
 }
 
+/**
+ * Walk BC's categoryTree to find the direct children of a given entityId.
+ * Returns each child's storefront path so we can re-use the same
+ * PmCategoryProductsQuery to pull their products.
+ *
+ * Used when a "hub" category (e.g. BUNDLES with id=73) has 0 direct
+ * products but has children that hold the actual products. The query
+ * is cached for 120s by the surrounding `unstable_cache` in the parent
+ * fetcher, so the cost of this extra trip is amortized across renders.
+ */
+const PmCategoryChildrenQuery = graphql(`
+  query PmCategoryChildrenQuery {
+    site {
+      categoryTree {
+        entityId
+        path
+        children {
+          entityId
+          path
+          children {
+            entityId
+            path
+          }
+        }
+      }
+    }
+  }
+`);
+
+interface CategoryTreeNode {
+  entityId: number;
+  path: string;
+  children?: CategoryTreeNode[];
+}
+
+function findDescendants(
+  tree: CategoryTreeNode[],
+  targetEntityId: number,
+): CategoryTreeNode[] {
+  for (const top of tree) {
+    if (top.entityId === targetEntityId) {
+      return collectAll(top.children ?? []);
+    }
+    if (top.children?.length) {
+      const found = findDescendants(top.children, targetEntityId);
+      if (found.length > 0) return found;
+    }
+  }
+  return [];
+}
+
+function collectAll(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+  const out: CategoryTreeNode[] = [];
+  for (const n of nodes) {
+    out.push(n);
+    if (n.children?.length) out.push(...collectAll(n.children));
+  }
+  return out;
+}
+
 async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetchResult> {
   // BC nests brand subcategories under `/brand/` (e.g.
   // `/brand/hewlett-packard-enterprise/`). Try the slug at root first;
@@ -335,27 +405,78 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
   // card reflects real sales velocity (cached for 5 min).
   const bestSellingIds = await fetchBestSellingProductIds();
 
-  const edges = node.products?.edges ?? [];
+  const directEdges = node.products?.edges ?? [];
 
-  const products = edges
-    .map((edge) => edge?.node)
-    .filter((node): node is NonNullable<typeof node> => node != null)
-    .map((node, index) =>
-      augmentToInternal({
-        id: node.entityId,
-        sku: node.sku,
-        name: node.name,
-        bcPath: node.path,
-        brand: node.brand?.name,
-        imageUrl: node.defaultImage?.url ?? undefined,
-        imageAlt: node.defaultImage?.altText ?? undefined,
-        priceValue: node.prices?.price?.value,
-        priceLabel: formatPrice(node.prices?.price),
-        inStock: node.inventory?.isInStock ?? false,
-        newestIndex: index,
-        bestSellingIds,
-      }),
-    );
+  // Mapper shared by direct-children and descendant-cascade paths so the
+  // shape is identical regardless of where the product was sourced.
+  const mapEdge = (edge: (typeof directEdges)[number], index: number) => {
+    const n = edge?.node;
+    if (!n) return null;
+    return augmentToInternal({
+      id: n.entityId,
+      sku: n.sku,
+      name: n.name,
+      bcPath: n.path,
+      brand: n.brand?.name,
+      imageUrl: n.defaultImage?.url ?? undefined,
+      imageAlt: n.defaultImage?.altText ?? undefined,
+      priceValue: n.prices?.price?.value,
+      priceLabel: formatPrice(n.prices?.price),
+      inStock: n.inventory?.isInStock ?? false,
+      newestIndex: index,
+      bestSellingIds,
+    });
+  };
+
+  let products = directEdges
+    .map(mapEdge)
+    .filter((p): p is PmInternalProduct => p !== null);
+
+  // Hub-category cascade: when the resolved category has zero direct
+  // products, treat it as a parent that just groups child categories
+  // (e.g. BUNDLES → AI Solutions / NAS Server). Pull the descendants
+  // out of the categoryTree and merge their products into the result.
+  //
+  // Dedup is by BC entityId — the same product can be in multiple
+  // categories (Asustor NAS is in both "NAS Server" and the legacy
+  // "NAS Bundle"), and BC's tree happily lists it twice.
+  if (products.length === 0 && node.entityId) {
+    try {
+      const { data: treeData } = await client.fetch({
+        document: PmCategoryChildrenQuery,
+        fetchOptions: { next: { revalidate } },
+      });
+      const tree = (treeData?.site?.categoryTree ?? []) as CategoryTreeNode[];
+      const descendants = findDescendants(tree, node.entityId);
+
+      if (descendants.length > 0) {
+        const childResults = await Promise.all(
+          descendants.map((child) =>
+            fetchAtPath(child.path).catch(() => null),
+          ),
+        );
+        const seen = new Set<number>();
+        const merged: PmInternalProduct[] = [];
+        for (const child of childResults) {
+          if (!child || child.__typename !== 'Category') continue;
+          for (const [i, edge] of (child.products?.edges ?? []).entries()) {
+            const mapped = mapEdge(edge, merged.length + i);
+            if (mapped && !seen.has(mapped.id)) {
+              seen.add(mapped.id);
+              merged.push(mapped);
+            }
+          }
+        }
+        products = merged;
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[pm-category-by-slug] descendant cascade failed:',
+        err,
+      );
+    }
+  }
 
   return {
     products,
