@@ -347,30 +347,30 @@ interface CategoryTreeNode {
 }
 
 /**
- * Walk the BC categoryTree to find every descendant of `targetEntityId`
- * — direct children + their children too. Used by the parent cascade
- * below to surface child-category products on a "hub" category page.
- *
- * Example: BUNDLES (id=73) has no direct products but has children 75
- * (AI Solutions) and 76 (NAS Server) with 1 and 19 products. Walking
- * descendants of 73 returns [75, 76] so the cascade can pull their
- * products into /category/bundles/.
+ * Flatten a forest of category nodes into a list (parent before children).
+ * Shared by both `findDescendants` and `findSiblings` below.
+ */
+function flatten(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+  const out: CategoryTreeNode[] = [];
+  for (const n of nodes) {
+    out.push(n);
+    if (n.children?.length) out.push(...flatten(n.children));
+  }
+  return out;
+}
+
+/**
+ * Find every descendant of `targetEntityId` (direct + indirect children).
+ * Used when a hub category like BUNDLES (id=73) has zero direct products
+ * — we walk into AI Solutions (75) and NAS Server (76) to pull theirs.
  */
 function findDescendants(
   tree: CategoryTreeNode[],
   targetEntityId: number,
 ): CategoryTreeNode[] {
-  const collectAll = (nodes: CategoryTreeNode[]): CategoryTreeNode[] => {
-    const out: CategoryTreeNode[] = [];
-    for (const n of nodes) {
-      out.push(n);
-      if (n.children?.length) out.push(...collectAll(n.children));
-    }
-    return out;
-  };
   for (const top of tree) {
     if (top.entityId === targetEntityId) {
-      return collectAll(top.children ?? []);
+      return flatten(top.children ?? []);
     }
     if (top.children?.length) {
       const found = findDescendants(top.children, targetEntityId);
@@ -378,6 +378,33 @@ function findDescendants(
     }
   }
   return [];
+}
+
+/**
+ * Find the siblings of `targetEntityId` (its parent's other children).
+ * Used when a placeholder category like "All Bundles" (id=74) is empty
+ * AND has no children — we climb to BUNDLES (73) and pull from the
+ * other children there (AI Solutions, NAS Server) so the page isn't
+ * blank. Returns `null` for top-level nodes (no parent → no siblings).
+ *
+ * When the admin populates "All Bundles" with its own products in BC
+ * admin (Products → category assignment), those direct products take
+ * precedence over this fallback and the cascade never fires.
+ */
+function findSiblings(
+  tree: CategoryTreeNode[],
+  targetEntityId: number,
+): CategoryTreeNode[] | null {
+  for (const top of tree) {
+    if (top.children?.some((c) => c.entityId === targetEntityId)) {
+      return top.children.filter((c) => c.entityId !== targetEntityId);
+    }
+    if (top.children?.length) {
+      const found = findSiblings(top.children, targetEntityId);
+      if (found !== null) return found;
+    }
+  }
+  return null;
 }
 
 async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetchResult> {
@@ -403,6 +430,33 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
     if (candidate && candidate.__typename === 'Category') {
       node = candidate;
       break;
+    }
+  }
+
+  // Nested-slug fallback: the mega menu surfaces sub-categories like
+  // "All Bundles" / "AI Solutions" / "NAS Server" with flat slugs
+  // (`/category/all-bundles/`), but their canonical BC paths are nested
+  // (`/bundles/all-bundles/`). Walk the categoryTree to find any node
+  // whose path ends with `/${slug}/` and resolve via that full path.
+  // Without this, every mega-menu sub-card 404s.
+  if (!node) {
+    try {
+      const { data: treeData } = await client.fetch({
+        document: PmCategoryChildrenQuery,
+        fetchOptions: { next: { revalidate } },
+      });
+      const tree = (treeData?.site?.categoryTree ?? []) as CategoryTreeNode[];
+      const suffix = `/${slug}/`;
+      const matched = flatten(tree).find((n) => n.path.endsWith(suffix));
+      if (matched) {
+        const candidate = await fetchAtPath(matched.path);
+        if (candidate && candidate.__typename === 'Category') {
+          node = candidate;
+        }
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[pm-category-by-slug] nested-slug lookup failed:', err);
     }
   }
 
@@ -464,21 +518,47 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
     .map(mapEdge)
     .filter((p): p is PmInternalProduct => p !== null);
 
-  // Hub-category cascade: when the resolved category has 0 direct
-  // products AND has children (e.g. BUNDLES → AI Solutions + NAS
-  // Server), pull every descendant's products and merge so the parent
-  // page isn't empty. This is the ONE complexity we keep — it's
-  // necessary because the mega-menu links to top-level hub categories
-  // like /category/bundles/ and the admin organizes catalog under
-  // them. Without it, /bundles/ shows zero.
+  // Empty-category fallback. Two cases handled:
   //
-  // Gate on `bcSaidEmpty` (zero raw edges from BC) — if BC returned
-  // edges but we dropped them all on filter (e.g. empty paths), don't
-  // cascade. Show "0" honestly instead of pulling siblings' content
-  // under the wrong heading.
+  //   1. HUB — category has 0 direct products but has children
+  //      (e.g. BUNDLES has children AI Solutions + NAS Server).
+  //      Pull every descendant's products and merge.
   //
-  // Dedup by entityId — the same product can be in multiple categories
-  // (Asustor NAS in both "NAS Server" and the legacy "NAS Bundle").
+  //   2. PLACEHOLDER — category has 0 direct + 0 children
+  //      (e.g. "All Bundles", which BC admin created as an
+  //      aggregate but hasn't populated yet). Climb to the parent
+  //      and pull from siblings.
+  //
+  // Both gate on `bcSaidEmpty` (zero raw edges from BC). If BC
+  // returned edges but we dropped them all on filter (empty paths,
+  // etc.), respect that the category is "non-empty in BC" and show
+  // "0" — don't masquerade as another category.
+  //
+  // Admin-override: when the admin assigns products directly to
+  // "All Bundles" in BC, `bcSaidEmpty` is false → cascade is skipped
+  // → those products are what shows. Cascade is strictly a fallback
+  // for the not-yet-populated case.
+  //
+  // Dedup by entityId — same product can be in multiple categories.
+  const pullProductsFromNodes = async (nodes: CategoryTreeNode[]) => {
+    const childResults = await Promise.all(
+      nodes.map((child) => fetchAtPath(child.path).catch(() => null)),
+    );
+    const seen = new Set<number>();
+    const merged: PmInternalProduct[] = [];
+    for (const child of childResults) {
+      if (!child || child.__typename !== 'Category') continue;
+      for (const [i, edge] of (child.products?.edges ?? []).entries()) {
+        const mapped = mapEdge(edge, merged.length + i);
+        if (mapped && !seen.has(mapped.id)) {
+          seen.add(mapped.id);
+          merged.push(mapped);
+        }
+      }
+    }
+    return merged;
+  };
+
   if (products.length === 0 && bcSaidEmpty && node.entityId) {
     try {
       const { data: treeData } = await client.fetch({
@@ -486,32 +566,25 @@ async function fetchPmCategoryRawProducts(slug: string): Promise<PmCategoryFetch
         fetchOptions: { next: { revalidate } },
       });
       const tree = (treeData?.site?.categoryTree ?? []) as CategoryTreeNode[];
-      const descendants = findDescendants(tree, node.entityId);
 
+      // Case 1 — hub: descend into children
+      const descendants = findDescendants(tree, node.entityId);
       if (descendants.length > 0) {
-        const childResults = await Promise.all(
-          descendants.map((child) =>
-            fetchAtPath(child.path).catch(() => null),
-          ),
-        );
-        const seen = new Set<number>();
-        const merged: PmInternalProduct[] = [];
-        for (const child of childResults) {
-          if (!child || child.__typename !== 'Category') continue;
-          for (const [i, edge] of (child.products?.edges ?? []).entries()) {
-            const mapped = mapEdge(edge, merged.length + i);
-            if (mapped && !seen.has(mapped.id)) {
-              seen.add(mapped.id);
-              merged.push(mapped);
-            }
-          }
+        products = await pullProductsFromNodes(descendants);
+      }
+
+      // Case 2 — placeholder: climb to parent and pull siblings
+      // (only when case 1 found nothing).
+      if (products.length === 0) {
+        const siblings = findSiblings(tree, node.entityId);
+        if (siblings && siblings.length > 0) {
+          products = await pullProductsFromNodes(flatten(siblings));
         }
-        products = merged;
       }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn(
-        '[pm-category-by-slug] hub cascade failed:',
+        '[pm-category-by-slug] empty-category fallback failed:',
         err,
       );
     }
