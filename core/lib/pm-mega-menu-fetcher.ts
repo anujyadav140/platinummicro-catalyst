@@ -446,7 +446,13 @@ export async function fetchPmMegaMenu(): Promise<PmMegaMenuMap> {
           ? `/dev/preview/search?bids=${brandIds.join(',')}&heading=${encodeURIComponent(heading)}`
           : `/dev/preview/search?q=${encodeURIComponent(item.name)}`;
 
-        brands.push({ name: item.name, href });
+        // Pass `logoUrl` through from BC so the brand chip can render a
+        // real logo image instead of falling back to text. Admin sets
+        // this via BC admin → Categories → Mega Menu Brands → [brand] →
+        // Image. Falls back cleanly to the text wordmark in
+        // pm-header.tsx when no image is set on a particular brand.
+        const logoUrl = curatedDetailsMap.get(item.entityId)?.imageUrl;
+        brands.push({ name: item.name, href, logoUrl });
       }
     }
 
