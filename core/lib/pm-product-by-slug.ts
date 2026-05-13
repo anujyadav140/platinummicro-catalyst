@@ -267,7 +267,15 @@ function softTitleCase(name: string): string {
  * the page-level component renders a 404.
  */
 export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetail | null> {
-  const path = slug.startsWith('/') ? slug : `/${slug}/`;
+  // Defensive guards — empty or whitespace-only slugs can land here when
+  // a card upstream had a malformed `node.path` from BC. Bail early so we
+  // don't pay for a BC GraphQL roundtrip just to be told "no, that's not
+  // a product."
+  const trimmed = slug?.trim();
+  if (!trimmed) return null;
+
+  // Normalize to the leading/trailing-slash form BC expects.
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}/`;
 
   const { data } = await client.fetch({
     document: PmProductBySlugQuery,
@@ -276,7 +284,21 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
   });
 
   const node = data?.site?.route?.node;
-  if (!node || node.__typename !== 'Product') return null;
+  if (!node || node.__typename !== 'Product') {
+    // Surface what BC actually returned so we can tell whether the link
+    // is genuinely dead vs. the slug pointed at a different node type
+    // (Category, Brand, BlogPost) — that's a real upstream bug worth
+    // catching in dev. Quiet in production to avoid log noise.
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[pm-product-by-slug] BC.site.route('${path}') resolved to ${
+          node?.__typename ?? 'null'
+        } — returning notFound()`,
+      );
+    }
+    return null;
+  }
 
   const galleryImages: PmProductImage[] = (node.images?.edges ?? [])
     .map((edge) => edge?.node)
