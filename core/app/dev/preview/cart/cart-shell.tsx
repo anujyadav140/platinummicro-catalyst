@@ -17,12 +17,10 @@ import { useState, type ReactNode } from 'react';
 import { PmTopBar } from '~/components/pm-top-bar';
 import { PmHeader } from '~/components/pm-header';
 import { PmFooter } from '~/components/pm-footer';
-import {
-  PmQuickOrderModal,
-  type PmQuickOrderRow,
-} from '~/components/pm-quick-order-modal';
+import { PmQuickOrderModal } from '~/components/pm-quick-order-modal';
 import { PmQuoteDrawer } from '~/components/pm-quote-drawer';
 import { PmQuoteProvider, usePmQuote } from '~/lib/pm-quote-store';
+import { useQuickOrderAddHandler } from '~/lib/pm-quick-order-handler';
 import { PmListsProvider } from '~/lib/pm-lists-store';
 import { PmRecentlyViewedProvider } from '~/lib/pm-recently-viewed-store';
 import {
@@ -50,13 +48,9 @@ export function CartShell({ children, customer = null }: CartShellProps) {
 }
 
 function CartShellInner({ children }: { children: ReactNode }) {
-  const { lines, addLines, open: openDrawer } = usePmQuote();
+  const { lines, open: openDrawer } = usePmQuote();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
-
-  const handleQuickOrderAdd = (rows: PmQuickOrderRow[]) => {
-    addLines(rows.map((r) => ({ sku: r.sku.trim(), qty: Number(r.qty) || 1 })));
-    openDrawer();
-  };
+  const handleQuickOrderAdd = useQuickOrderAddHandler();
 
   return (
     <>

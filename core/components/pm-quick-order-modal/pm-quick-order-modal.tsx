@@ -15,8 +15,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
 import type {
+  PmQuickOrderAddResult,
   PmQuickOrderModalProps,
   PmQuickOrderRow,
 } from './pm-quick-order-modal.types';
@@ -34,33 +35,80 @@ export function PmQuickOrderModal({
   const [rows, setRows] = useState<PmQuickOrderRow[]>(() =>
     makeEmptyRows(initialRowCount),
   );
+  // While the BC resolver is running we disable the form so the user
+  // can't double-submit or close mid-flight.
+  const [submitting, setSubmitting] = useState(false);
+  // SKUs the resolver couldn't match — surfaced inline so the user can
+  // fix typos without losing the rest of the rows they typed.
+  const [missing, setMissing] = useState<string[]>([]);
 
-  // Close on Escape
+  // Close on Escape (disabled while a submit is in flight so a stray
+  // keypress can't strand the user mid-resolve).
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !submitting) onClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  }, [open, onClose, submitting]);
 
-  // Reset rows shortly after the close animation
+  // Reset state shortly after the close animation.
   const handleClose = useCallback(() => {
+    if (submitting) return;
     onClose();
-    setTimeout(() => setRows(makeEmptyRows(initialRowCount)), 200);
-  }, [onClose, initialRowCount]);
+    setTimeout(() => {
+      setRows(makeEmptyRows(initialRowCount));
+      setMissing([]);
+    }, 200);
+  }, [onClose, initialRowCount, submitting]);
 
   const setRow = (i: number, key: keyof PmQuickOrderRow, value: string | number) => {
     setRows((rs) =>
       rs.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)),
     );
+    // Clear the stale "missing" warnings as soon as the user starts
+    // editing — the previous resolver result no longer reflects what's
+    // in the form.
+    if (key === 'sku' && missing.length > 0) setMissing([]);
   };
 
   const addRow = () => setRows((rs) => [...rs, { sku: '', qty: 1 }]);
 
   const removeRow = (i: number) => {
     setRows((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs));
+  };
+
+  const handleSubmit = async () => {
+    const filledRows = rows.filter((r) => r.sku.trim().length > 0);
+    if (filledRows.length === 0 || !onAdd) return;
+    setSubmitting(true);
+    setMissing([]);
+    try {
+      const result = await onAdd(filledRows);
+      const r = (result ?? {}) as PmQuickOrderAddResult;
+      if (Array.isArray(r.missing) && r.missing.length > 0) {
+        // Keep modal open so the user can fix typos. Drop the resolved
+        // rows from the form so only the unmatched ones remain visible.
+        const stillMissing = new Set(r.missing.map((s) => s.toLowerCase()));
+        setRows((rs) => {
+          const trimmed = rs.filter((row) =>
+            stillMissing.has(row.sku.trim().toLowerCase()),
+          );
+          return trimmed.length > 0 ? trimmed : makeEmptyRows(initialRowCount);
+        });
+        setMissing(r.missing);
+      } else {
+        // Everything resolved — drop the form contents and close.
+        onClose();
+        setTimeout(() => {
+          setRows(makeEmptyRows(initialRowCount));
+          setMissing([]);
+        }, 200);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!open) return null;
@@ -108,6 +156,36 @@ export function PmQuickOrderModal({
             <X size={18} strokeWidth={1.5} />
           </button>
         </div>
+
+        {/* MISSING SKUS banner — only rendered after a resolve attempt
+            where some SKUs didn't match the BC catalog. Stays visible
+            until the user edits a SKU input (cleared via setRow). */}
+        {missing.length > 0 && (
+          <div
+            role="alert"
+            className="flex shrink-0 items-start gap-2.5 rounded-md border border-pm-warning/40 bg-pm-warning/10 px-3 py-2.5 text-[13px] leading-snug text-pm-ink-900"
+          >
+            <AlertCircle
+              size={16}
+              strokeWidth={2}
+              className="mt-0.5 shrink-0 text-pm-warning"
+            />
+            <div>
+              <div className="font-semibold">
+                {missing.length === 1
+                  ? "We couldn't find that SKU in the catalog."
+                  : `We couldn't find ${missing.length} of those SKUs in the catalog.`}
+              </div>
+              <div className="mt-0.5 text-[12px] text-pm-ink-700">
+                {missing.join(', ')}
+              </div>
+              <div className="mt-0.5 text-[12px] text-pm-ink-500">
+                Double-check the spelling, or remove them and submit again.
+                The rest of your list has been added.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ROWS — scrolls internally */}
         <div
@@ -173,20 +251,29 @@ export function PmQuickOrderModal({
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:bg-pm-ink-200"
+              disabled={submitting}
+              className="rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="button"
-              disabled={filled.length === 0}
-              onClick={() => {
-                onAdd?.(filled);
-                handleClose();
-              }}
-              className="rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:bg-pm-ink-300"
+              disabled={filled.length === 0 || submitting}
+              onClick={handleSubmit}
+              className="inline-flex min-w-[148px] items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:enabled:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:bg-pm-ink-300"
             >
-              Add to cart
+              {submitting ? (
+                <>
+                  <Loader2
+                    size={16}
+                    strokeWidth={2.25}
+                    className="animate-spin"
+                  />
+                  Resolving…
+                </>
+              ) : (
+                'Add to cart'
+              )}
             </button>
           </div>
         </div>

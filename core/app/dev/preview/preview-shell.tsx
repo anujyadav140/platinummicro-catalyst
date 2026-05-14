@@ -21,12 +21,10 @@ import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
 import { PmCategoryStrip } from '~/components/pm-category-strip';
 import { PmProductGrid } from '~/components/pm-product-grid';
 import { PmFooter } from '~/components/pm-footer';
-import {
-  PmQuickOrderModal,
-  type PmQuickOrderRow,
-} from '~/components/pm-quick-order-modal';
+import { PmQuickOrderModal } from '~/components/pm-quick-order-modal';
 import { PmQuoteDrawer } from '~/components/pm-quote-drawer';
 import { PmQuoteProvider, usePmQuote } from '~/lib/pm-quote-store';
+import { useQuickOrderAddHandler } from '~/lib/pm-quick-order-handler';
 import { PmListsProvider } from '~/lib/pm-lists-store';
 import { PmRecentlyViewedProvider } from '~/lib/pm-recently-viewed-store';
 import {
@@ -70,13 +68,12 @@ function PreviewInner({
   products: PmProduct[];
   sections: PmPageSection[];
 }) {
-  const { lines, addLines, open: openDrawer } = usePmQuote();
+  const { lines, open: openDrawer } = usePmQuote();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
-
-  const handleQuickOrderAdd = (rows: PmQuickOrderRow[]) => {
-    addLines(rows.map((r) => ({ sku: r.sku.trim(), qty: Number(r.qty) || 1 })));
-    openDrawer();
-  };
+  // Shared Quick Order handler — resolves each typed SKU against BC
+  // before adding so the BoM line has productEntityId + price + stock
+  // (needed for direct Stencil checkout, not just quote).
+  const handleQuickOrderAdd = useQuickOrderAddHandler();
 
   return (
     <>
