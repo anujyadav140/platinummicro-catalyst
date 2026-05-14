@@ -37,7 +37,9 @@
  *   card_N_title:     Required to count the card
  *   card_N_subtitle:  Optional supporting text
  *   card_N_icon:      Lucide icon name (Landmark, GraduationCap, etc.)
- *   card_N_image:     Image URL (used INSTEAD of icon when both set)
+ *   card_N_emoji:     Single emoji char (🖥️, 🛒, 📦) — takes precedence
+ *                     over image and icon when set
+ *   card_N_image:     Image URL (takes precedence over icon when both set)
  *   card_N_href:      Link URL (whole card becomes clickable)
  *
  * Per-card visual overrides (any subset):
@@ -67,6 +69,8 @@
  *   icon_size:        Icon size in px (default 18)
  *   icon_bg:          Icon tile background (default #eef1f7)
  *   icon_color:       Icon stroke color (default #2e6db4)
+ *   image_size:       Pixel box for image/emoji glyph (default 48; bump
+ *                     to 96 or 112 for the CDW-style "photo card" look)
  *   show_hover_arrow: "true" | "false" — small ↗ on hover (default true)
  */
 
@@ -83,7 +87,14 @@ export interface PmCardConfig {
   subtitle?: string;
   /** Lucide icon name (resolved by the renderer). Falls back when missing. */
   iconName?: string;
-  /** Image URL — when set, takes precedence over `iconName`. */
+  /**
+   * Single emoji or short text glyph (e.g. "🖥️", "🛒"). When set, takes
+   * precedence over imageUrl + iconName — rendered as a large character
+   * centered above the title, no background tile. Lets admins skin a
+   * card grid without uploading images or memorizing Lucide names.
+   */
+  emoji?: string;
+  /** Image URL — used when no emoji. Takes precedence over iconName. */
   imageUrl?: string;
   /** Optional link URL. When set, the whole card becomes clickable. */
   href?: string;
@@ -119,6 +130,13 @@ export interface PmCardSectionConfig {
   iconSize?: number;
   iconBg?: string;
   iconColor?: string;
+  /**
+   * Pixel size for the per-card image / emoji glyph. Defaults to 48 to
+   * match the original tight "icon tile" look; larger values (96/112)
+   * give the CDW-style "photo card" look the admin can opt into per
+   * section.
+   */
+  imageSize?: number;
   /** Whether to show the ↗ hover arrow on the cards */
   showHoverArrow?: boolean;
   /** The cards themselves, in order */
@@ -181,6 +199,7 @@ function collectCards(kv: Record<string, string>): PmCardConfig[] {
       title,
       subtitle: kv[`${prefix}subtitle`] || undefined,
       iconName: kv[`${prefix}icon`] || undefined,
+      emoji: kv[`${prefix}emoji`] || undefined,
       imageUrl: kv[`${prefix}image`] || undefined,
       href: kv[`${prefix}href`] || undefined,
       bgColor: kv[`${prefix}bg`] || undefined,
@@ -214,6 +233,7 @@ function buildConfigFromBlock(block: string): PmCardSectionConfig {
     iconSize: coerceNumber(kv.icon_size),
     iconBg: kv.icon_bg || undefined,
     iconColor: kv.icon_color || undefined,
+    imageSize: coerceNumber(kv.image_size),
     showHoverArrow: coerceBool(kv.show_hover_arrow),
     cards: collectCards(kv),
   };

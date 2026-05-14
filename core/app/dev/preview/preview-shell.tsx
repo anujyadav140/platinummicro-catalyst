@@ -18,7 +18,6 @@ import { useState } from 'react';
 import { PmTopBar } from '~/components/pm-top-bar';
 import { PmHeader } from '~/components/pm-header';
 import { PmPageSectionsRenderer } from '~/components/pm-page-sections-renderer';
-import { PmCategoryStrip } from '~/components/pm-category-strip';
 import { PmProductGrid } from '~/components/pm-product-grid';
 import { PmFooter } from '~/components/pm-footer';
 import { PmQuickOrderModal } from '~/components/pm-quick-order-modal';
@@ -97,9 +96,13 @@ function PreviewInner({
           old hardcoded <PmAudienceStrip> ("Industries we serve") has
           moved INTO this config — admin can edit/reorder/add/remove
           cards without code. */}
+      {/* Browse-by-category used to be a hardcoded <PmCategoryStrip />
+          here. It now ships as a `<!--pm-cards ... -->` fence block on
+          a child of BC's "PM Home Page Banners" slot — see
+          scripts/pm-bootstrap-browse-by-category.mjs. Admin can re-skin
+          / re-layout / add or remove cards directly in BC admin without
+          a code change. */}
       <PmPageSectionsRenderer sections={sections} />
-
-      <PmCategoryStrip />
 
       <PmProductGrid
         eyebrow="Catalog"

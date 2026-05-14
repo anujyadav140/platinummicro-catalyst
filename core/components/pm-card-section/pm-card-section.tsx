@@ -107,6 +107,9 @@ const DEFAULTS = {
   iconSize: 18,
   iconBg: '#eef1f7',
   iconColor: '#2e6db4',
+  // 48px matches the tight "icon tile" look. Admins opt into the
+  // CDW-clean "photo card" look by setting image_size: 96 or higher.
+  imageSize: 48,
   showHoverArrow: true,
 };
 
@@ -132,6 +135,7 @@ export function PmCardSection({ section }: PmCardSectionProps) {
     iconSize = DEFAULTS.iconSize,
     iconBg = DEFAULTS.iconBg,
     iconColor = DEFAULTS.iconColor,
+    imageSize = DEFAULTS.imageSize,
     showHoverArrow = DEFAULTS.showHoverArrow,
     cards,
   } = section;
@@ -223,6 +227,7 @@ export function PmCardSection({ section }: PmCardSectionProps) {
                 iconSize={iconSize}
                 iconBg={iconBg}
                 iconColor={iconColor}
+                imageSize={imageSize}
                 cardBg={cardBg}
                 cardText={cardText}
                 cardBorder={cardBorder}
@@ -249,6 +254,7 @@ function PmCard({
   iconSize,
   iconBg,
   iconColor,
+  imageSize,
   cardBg,
   cardText,
   cardBorder,
@@ -262,6 +268,7 @@ function PmCard({
   iconSize: number;
   iconBg: string;
   iconColor: string;
+  imageSize: number;
   cardBg: string;
   cardText?: string;
   cardBorder: string;
@@ -287,28 +294,52 @@ function PmCard({
     '--pm-card-hover-accent': cardHoverAccent,
   };
   const isCentered = align === 'center';
+  // Render priority for the card visual: emoji > image > icon > nothing.
+  // Lets an admin swap between visuals without changing card structure.
+  const visualSizeStyle: React.CSSProperties = {
+    width: `${imageSize}px`,
+    height: `${imageSize}px`,
+  };
   const inner = (
     <article
       className="pm-card"
       style={cardStyle}
       title={card.subtitle ?? card.title}
     >
-      {/* Visual: image takes precedence; otherwise icon tile; otherwise nothing. */}
-      {card.imageUrl ? (
+      {card.emoji ? (
+        <div
+          aria-hidden
+          className={`flex items-center justify-center ${isCentered ? 'mx-auto' : ''}`}
+          style={{
+            ...visualSizeStyle,
+            // Scale the glyph to roughly fill the box — `0.8em` keeps a
+            // hair of padding so emoji descenders aren't clipped.
+            fontSize: `${Math.round(imageSize * 0.8)}px`,
+            lineHeight: 1,
+          }}
+        >
+          {card.emoji}
+        </div>
+      ) : card.imageUrl ? (
         <Image
           src={card.imageUrl}
           alt=""
-          width={96}
-          height={96}
-          sizes="48px"
-          className={`h-12 w-12 object-contain ${isCentered ? 'mx-auto' : ''}`}
+          width={imageSize * 2}
+          height={imageSize * 2}
+          sizes={`${imageSize}px`}
+          className={`object-contain ${isCentered ? 'mx-auto' : ''}`}
+          style={visualSizeStyle}
         />
       ) : Icon ? (
         <div
-          className={`pm-card-icon flex h-10 w-10 items-center justify-center rounded-md ${isCentered ? 'mx-auto' : ''}`}
-          style={{ backgroundColor: iconBg, color: iconColor }}
+          className={`pm-card-icon flex items-center justify-center rounded-md ${isCentered ? 'mx-auto' : ''}`}
+          style={{
+            ...visualSizeStyle,
+            backgroundColor: iconBg,
+            color: iconColor,
+          }}
         >
-          <Icon size={iconSize} strokeWidth={1.75} />
+          <Icon size={Math.max(iconSize, Math.round(imageSize * 0.5))} strokeWidth={1.75} />
         </div>
       ) : null}
 

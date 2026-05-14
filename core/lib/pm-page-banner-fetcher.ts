@@ -130,7 +130,7 @@ const cachedResolveSlot = unstable_cache(
       return null;
     }
   },
-  ['pm-page-banner-slot-resolution-v5'],
+  ['pm-page-banner-slot-resolution-v7'],
   { revalidate: 120, tags: ['pm-page-banners'] },
 );
 
