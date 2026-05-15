@@ -1,0 +1,4 @@
+{
+  "targetId": 310,
+  "fence": "<!--pm-hero\nimage: https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=85\nimage_fit: split\nimage_position: left\nimage_half_bg: #0a1430\nimage_half_size: cover\nimage_half_position: center\ncontent_half_bg: #f5f5f0\ntext: dark\naccent: #00b388\neyebrow: HPE official partner\nheadline: Discover the HPE ProLiant DL series.\nbody: Gen11 rack servers built for hybrid workloads — sourced direct, racked and burned in by our team, freighted from Southern California.\ncta_label: View ProLiant servers\ncta_href: /dev/preview/search?heading=HPE\nheight: 380px\npadding_y: 0\ncontent_padding: 56px 64px\nmargin_top: 48px\nmargin_bottom: 24px\nborder_radius: 16px\nfull_bleed: false\n-->"
+}
