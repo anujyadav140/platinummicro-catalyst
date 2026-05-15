@@ -77,27 +77,21 @@ ribbon_text: #ffffff
 
 card_1_title: System Integrators
 card_1_image: ${IMG.systemIntegrators}
-card_1_href: /dev/preview/category/components
 
 card_2_title: Education
 card_2_image: ${IMG.education}
-card_2_href: /dev/preview/category/computers
 
 card_3_title: SMB
 card_3_image: ${IMG.smb}
-card_3_href: /dev/preview/category/servers
 
 card_4_title: Public Sector
 card_4_image: ${IMG.publicSector}
-card_4_href: /dev/preview/category/servers
 
 card_5_title: Healthcare
 card_5_image: ${IMG.healthcare}
-card_5_href: /dev/preview/category/storage
 
 card_6_title: Enterprise
 card_6_image: ${IMG.enterprise}
-card_6_href: /dev/preview/category/servers
 -->`;
 
 async function bcReq(method, path, body) {
