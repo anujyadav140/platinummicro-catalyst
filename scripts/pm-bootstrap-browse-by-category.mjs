@@ -48,42 +48,55 @@ const CHILD_NAME = 'Home Page Browse by Category';
 // swap any card_N_icon for card_N_emoji (or card_N_image) directly in
 // the BC admin UI — the parser + renderer support all three priorities
 // (emoji > image > icon).
+//
+// Visual: PMI brand-tinted tile background (warm tan-pale) with the
+// brand navy stroke icon on top. Centered card content, generous
+// padding, no shadows — reads like CDW's "Explore popular products"
+// but with a per-card descriptor line so each card carries weight.
 const FENCE_BLOCK = `<!--pm-cards
 eyebrow: Catalog
 title: Browse by category
+subtitle: Pick a category to dive into 20,000+ enterprise-grade SKUs.
 columns: 5
 columns_md: 3
 columns_sm: 2
-gap: 16px
-padding_y: 64px
+gap: 18px
+padding_y: 88px
 align: center
 
+bg: #fafaf7
 card_bg: white
-card_border: 1px solid #f0eee8
-card_radius: 12px
-card_padding: 28px
-image_size: 80
-icon_bg: #f7f4ec
+card_border: 1px solid #ece7d8
+card_radius: 16px
+card_padding: 32px
+card_hover_accent: #2a4d72
+image_size: 64
+icon_bg: #f7f1e3
 icon_color: #2a4d72
 show_hover_arrow: false
 
 card_1_title: Components
+card_1_subtitle: CPUs, RAM, GPUs, drives
 card_1_icon: Cpu
 card_1_href: /dev/preview/category/components/
 
 card_2_title: Networking
+card_2_subtitle: Switches, routers, optics
 card_2_icon: Network
 card_2_href: /dev/preview/category/networking/
 
 card_3_title: Servers
+card_3_subtitle: Rack, tower, blade systems
 card_3_icon: Server
 card_3_href: /dev/preview/category/servers/
 
 card_4_title: Software
-card_4_icon: Monitor
+card_4_subtitle: Licenses & subscriptions
+card_4_icon: ShieldCheck
 card_4_href: /dev/preview/category/software/
 
 card_5_title: Bundles & kits
+card_5_subtitle: Pre-configured solutions
 card_5_icon: Boxes
 card_5_href: /dev/preview/category/bundles/
 -->`;
