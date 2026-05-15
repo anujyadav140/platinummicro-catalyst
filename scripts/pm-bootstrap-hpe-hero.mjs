@@ -35,12 +35,13 @@ const TARGET_CATEGORY_ID = 310;
 const SLOT_PARENT_ID = 304;
 const TARGET_NAME = 'Home Page Banner 4 — Split (image left)';
 
-// Placeholder image — admin should drop in the actual HPE ProLiant DL
-// Gen11 marketing asset (the cyan-arrow + stacked-servers composition)
-// by editing `image:` in BC admin → Banner 4 → Description. The
-// renderer accepts any URL (BC media library, HPE partner CDN, etc.).
+// Real HPE ProLiant DL Gen11 marketing asset — cyan-arrow composition
+// with the DL series stack. Uploaded to the hidden PM-INDUSTRIES BC
+// product (id=6011) via pm-upload-industry-images.mjs so the URL is
+// stable forever. Admin can swap to a different asset by editing
+// `image:` in BC admin → Banner 4 → Description.
 const HPE_HERO_IMAGE =
-  'https://images.unsplash.com/photo-1591405351990-4726e331f141?auto=format&fit=crop&w=1600&q=85';
+  'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25203/hpe-proliant-dl-gen11__11323.1778866218.1280.1280.jpg?c=1';
 
 // Copy borrows HPE's "HPE × AMD: Better Together" positioning and the
 // ProLiant DL Gen11 messaging that ran at HPE's event — refactored so

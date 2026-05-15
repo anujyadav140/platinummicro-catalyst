@@ -37,8 +37,25 @@ const TARGET_CATEGORY_ID = 308;
 const SLOT_PARENT_ID = 304;
 const TARGET_NAME = 'Home Page Banner 3';
 
-// Stable Unsplash photo IDs (cropped for 600x300 landscape). Admin can
-// swap to BC-hosted assets at any time by editing card_N_image keys.
+// BC-hosted CDN URLs — uploaded via pm-upload-industry-images.mjs to a
+// hidden PM-INDUSTRIES product (id=6011). Admin can swap any of these
+// to a different URL by editing the card_N_image lines in BC admin.
+// Source: scripts/pm-upload-industry-images.log.json
+const IMG = {
+  systemIntegrators:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25197/system-integrators__28810.1778866018.1280.1280.jpg?c=1',
+  education:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25198/education__70025.1778866019.1280.1280.jpg?c=1',
+  smb:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25199/smb__35333.1778866019.1280.1280.jpg?c=1',
+  publicSector:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25200/public-sector__13306.1778866020.1280.1280.jpg?c=1',
+  healthcare:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25201/healthcare__50950.1778866020.1280.1280.jpg?c=1',
+  enterprise:
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25202/enterprise__77768.1778866020.1280.1280.jpg?c=1',
+};
+
 const FENCE_BLOCK = `<!--pm-cards
 eyebrow: Who we serve
 title: Industries we serve
@@ -46,46 +63,46 @@ subtitle: Hardware, software, and services tailored to the verticals we know bes
 columns: 3
 columns_md: 2
 columns_sm: 1
-gap: 24px
-padding_y: 88px
+gap: 28px
+padding_y: 96px
 align: left
 bg: #ffffff
 
 card_style: poster
-card_aspect: 2 / 1
-card_border: 3px solid #5e1a1a
-card_radius: 0
+card_aspect: 16 / 9
+card_border: none
+card_radius: 12px
 ribbon_bg: #8a2929
 ribbon_text: #ffffff
 
 card_1_title: System Integrators
 card_1_subtitle: Channel pricing, white-label logistics, BOM-driven rollouts
-card_1_image: https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=70
+card_1_image: ${IMG.systemIntegrators}
 card_1_href: /dev/preview/category/components
 
 card_2_title: Education
 card_2_subtitle: E-rate-aware procurement, classroom kitting, lifecycle takeback
-card_2_image: https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=70
+card_2_image: ${IMG.education}
 card_2_href: /dev/preview/category/computers
 
 card_3_title: SMB
 card_3_subtitle: Right-sized configurations and named account managers
-card_3_image: https://images.unsplash.com/photo-1552581234-26160f608093?auto=format&fit=crop&w=900&q=70
+card_3_image: ${IMG.smb}
 card_3_href: /dev/preview/category/servers
 
 card_4_title: Public Sector
 card_4_subtitle: GSA-aligned procurement and cooperative contract vehicles
-card_4_image: https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=900&q=70
+card_4_image: ${IMG.publicSector}
 card_4_href: /dev/preview/category/servers
 
 card_5_title: Healthcare
 card_5_subtitle: HIPAA-aware sourcing and asset tagging for clinical sites
-card_5_image: https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=70
+card_5_image: ${IMG.healthcare}
 card_5_href: /dev/preview/category/storage
 
 card_6_title: Enterprise
 card_6_subtitle: Dedicated account managers and global drop-ship
-card_6_image: https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=900&q=70
+card_6_image: ${IMG.enterprise}
 card_6_href: /dev/preview/category/servers
 -->`;
 

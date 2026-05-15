@@ -430,6 +430,10 @@ function PmPosterCard({
     backgroundImage: card.imageUrl ? `url(${card.imageUrl})` : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    // Subtle resting shadow so borderless poster cards still have
+    // presence — hover state (handled by the parent .pm-card rule)
+    // amplifies it to the full lift.
+    boxShadow: '0 4px 12px rgba(7,21,37,0.08), 0 1px 2px rgba(7,21,37,0.04)',
     transition: 'transform 180ms ease, box-shadow 180ms ease',
     cursor: card.href ? 'pointer' : 'default',
   };
