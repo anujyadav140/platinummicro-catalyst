@@ -45,13 +45,19 @@ const DOWNLOADS = 'C:/Users/anuj/Downloads';
 // Source file name → admin-facing label. The label maps 1:1 with the
 // industries section labels and becomes the BC image `description` so
 // we can de-dupe on rerun.
+//
+// Each entry can also carry `replace: true` to force re-upload even
+// when an image with the same label already exists in BC. Used when
+// the admin sends a refreshed version of the same image.
 const SOURCES = [
-  { file: 'system-integrators.webp', label: 'System Integrators' },
-  { file: 'education.webp', label: 'Education' },
-  { file: 'smb.png', label: 'SMB' },
-  { file: 'public-sector.webp', label: 'Public Sector' },
-  { file: 'healthcare.webp', label: 'Healthcare' },
-  { file: 'enterprise.webp', label: 'Enterprise' },
+  // System Integrators is intentionally commented out — admin is still
+  // sending the final cut. Uncomment + run once it lands in Downloads.
+  // { file: 'system-integrators.webp', label: 'System Integrators' },
+  { file: 'education.png', label: 'Education', replace: true },
+  { file: 'smb.png', label: 'SMB', replace: true },
+  { file: 'public-sector.jpg', label: 'Public Sector', replace: true },
+  { file: 'healthcare.jpg', label: 'Healthcare', replace: true },
+  { file: 'enterprise.jpg', label: 'Enterprise', replace: true },
 ];
 
 const HIDDEN_PRODUCT_SKU = 'PM-INDUSTRIES';
@@ -66,6 +72,17 @@ async function bcJson(method, path, body) {
   const text = await res.text();
   if (!res.ok) throw new Error(`BC ${res.status} ${method} ${path}: ${text}`);
   return text ? JSON.parse(text) : null;
+}
+
+async function bcDelete(path) {
+  const res = await fetch(`${BC_BASE}${path}`, {
+    method: 'DELETE',
+    headers: HEADERS_JSON,
+  });
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text();
+    throw new Error(`BC ${res.status} DELETE ${path}: ${text}`);
+  }
 }
 
 async function findOrCreateHiddenProduct() {
@@ -163,11 +180,17 @@ async function main() {
       console.log(`  ! ${src.label.padEnd(20)} skipped — ${local} missing`);
       continue;
     }
-    if (existing.has(src.label)) {
-      const img = existing.get(src.label);
-      console.log(`  ✓ ${src.label.padEnd(20)} already in BC (id=${img.id})`);
-      result[src.label] = img.url_zoom || img.url_standard;
+    const prev = existing.get(src.label);
+    if (prev && !src.replace) {
+      console.log(`  ✓ ${src.label.padEnd(20)} already in BC (id=${prev.id})`);
+      result[src.label] = prev.url_zoom || prev.url_standard;
       continue;
+    }
+    if (prev && src.replace) {
+      // Replace mode: delete the prior image so re-upload doesn't
+      // create a duplicate gallery entry under the same description.
+      console.log(`  - ${src.label.padEnd(20)} deleting prior id=${prev.id}…`);
+      await bcDelete(`/catalog/products/${productId}/images/${prev.id}`);
     }
     console.log(`  ↑ ${src.label.padEnd(20)} uploading ${src.file}…`);
     const img = await uploadOne(productId, src.label, local);

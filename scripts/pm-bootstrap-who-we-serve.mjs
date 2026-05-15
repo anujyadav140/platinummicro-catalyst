@@ -42,18 +42,20 @@ const TARGET_NAME = 'Home Page Banner 3';
 // to a different URL by editing the card_N_image lines in BC admin.
 // Source: scripts/pm-upload-industry-images.log.json
 const IMG = {
+  // Awaiting refreshed system-integrators image from admin — leaving
+  // the original 25197 entry in place for now.
   systemIntegrators:
     'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25197/system-integrators__28810.1778866018.1280.1280.jpg?c=1',
   education:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25198/education__70025.1778866019.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25204/education__05056.1778867322.1280.1280.png?c=1',
   smb:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25199/smb__35333.1778866019.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25205/smb__79692.1778867322.1280.1280.png?c=1',
   publicSector:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25200/public-sector__13306.1778866020.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25206/public-sector__76128.1778867323.1280.1280.jpg?c=1',
   healthcare:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25201/healthcare__50950.1778866020.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25207/healthcare__55732.1778867323.1280.1280.jpg?c=1',
   enterprise:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25202/enterprise__77768.1778866020.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25208/enterprise__86862.1778867323.1280.1280.jpg?c=1',
 };
 
 const FENCE_BLOCK = `<!--pm-cards
