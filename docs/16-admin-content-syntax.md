@@ -644,6 +644,93 @@ on failed parses.
 
 ---
 
+## Bundle modifiers (PDP "Bundle and get N% off")
+
+Bundles aren't fence blocks — they're BC **product modifiers**. But the
+admin workflow is the same idea (edit data in BC, no code change
+needed), so it's documented here.
+
+### What you can change as admin
+
+For any product that should offer a bundle on its PDP (e.g. a NAS,
+server, or AI box):
+
+- **Add new bundle options** — radio rows like "WD 4TB SSD", "WD 8TB
+  SSD", "Samsung 4TB SSD" on the same modifier
+- **Change which product is bundled** — point any option at a different
+  linked product
+- **Change the discount %** on the base product when an option is
+  picked (the modifier value's price adjuster)
+- **Reorder** options (admin sort order)
+- **Remove** options
+
+The Catalyst storefront supports **N options per modifier** out of the
+box. The qty stepper appears inline on whichever option the user
+selects.
+
+### Where to edit
+
+> **BC admin → Products → [pick the product, e.g. AS6706T v2] →
+> Edit → Modifiers tab**
+
+You'll see a `product_list_with_images` modifier named
+"Bundle and get 3% off" (or similar). Click into it:
+
+- **Display name** — rename to change the section heading on the PDP
+  (e.g. "Bundle and get 5% off"). The number in the name is **purely
+  cosmetic** — the actual discount comes from each option's price
+  adjuster (next bullet).
+
+- **Each option_value** has:
+  - **Label** — the text shown in the radio row
+  - **Product** — the linked product (drag-drop picker). This is what
+    gets added to the cart at the bundle qty
+  - **Adjusters → Price** — the discount on the BASE product when this
+    option is picked. Use **Percentage** (e.g. -3 for 3% off) or
+    **Fixed amount** (e.g. -$25 off)
+
+Click **Save**. Hard-refresh the PDP within 120 seconds (Next.js cache
+TTL) and the new option lands as a radio row in the bundle picker.
+
+### ⚠ Critical gotcha — linked products must be visible
+
+If the linked product has **Visibility: Hidden** in BC, the BC
+Storefront GraphQL API silently drops it and the bundle option won't
+render. Symptom: you add a 2nd option in BC, save, refresh, and only
+the original option still shows.
+
+Fix: open the linked product → set **Visibility: Visible** → save.
+
+(If you want the linked product to NOT show up in nav / search but
+still be usable as a bundle item, that's a BC-level limitation — BC
+doesn't have a "hidden from browse but accessible via modifier" flag.
+Workaround: keep it visible but `is_featured: false` and don't add it
+to any nav category.)
+
+### Per-product per-bundle pricing (the legacy "Pack of N" replacement)
+
+If you want **qty 2+ of the linked product to cost a different amount
+per unit** (e.g. legacy's "Pack of 2" model where 2 SSDs were
+$1,239.99 instead of 2 × $529.99), set a **bulk-pricing tier** on the
+LINKED product (not on the bundle product):
+
+> **BC admin → Products → [WD WDS400T4B0E SSD] → Pricing tab →
+> Bulk pricing → Add rule**
+
+Set: `Min qty: 2, Max: unlimited, Type: Fixed price, Amount: 619.99`.
+The Catalyst bundle stepper reads `Product.prices.bulkPricing` and
+applies the right per-unit price at each qty.
+
+### Same fix in JSON (advanced)
+
+If editing in BC admin is fiddly, the same fields are reachable via
+`/v3/catalog/products/{id}/modifiers/{mod_id}/values` (POST to add,
+PUT to update, DELETE to remove). See
+`scripts/pm-bundle-bulk-setup.mjs` and
+`scripts/pm-bundle-bulk-adjusters.mjs` for working examples.
+
+---
+
 ## See also
 
 - `docs/02-hero-banners.md` — original hero-banner design notes
