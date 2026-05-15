@@ -61,8 +61,8 @@ image: ${HPE_HERO_IMAGE}
 image_fit: split
 image_position: left
 image_half_bg: #f5f5f0
-image_half_size: contain
-image_half_position: 70% center
+image_half_size: cover
+image_half_position: right center
 content_half_bg: #f5f5f0
 text: dark
 accent: #00b388
@@ -70,7 +70,7 @@ eyebrow: HPE × AMD · Better together
 headline: ProLiant DL Gen11. Built with AMD EPYC.
 body: Up to 96 cores per socket, breakthrough AI performance, and silicon-rooted security in every rack. Sourced direct, racked and burned in by our team, freighted from Southern California — your authorized HPE source.
 cta_label: Browse HPE ProLiant
-cta_href: /dev/preview/search?q=ProLiant+EPYC&heading=HPE+ProLiant+with+AMD+EPYC
+cta_href: /dev/preview/category/hpe-proliant-gen11-amd-epyc/
 height: 380px
 padding_y: 0
 content_padding: 56px 64px
