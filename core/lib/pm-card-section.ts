@@ -72,6 +72,13 @@
  *   image_size:       Pixel box for image/emoji glyph (default 48; bump
  *                     to 96 or 112 for the CDW-style "photo card" look)
  *   show_hover_arrow: "true" | "false" — small ↗ on hover (default true)
+ *   card_style:       icon-tile (default) | poster — switches rendering.
+ *                     `poster` makes the card_N_image fill the card as
+ *                     a background and renders card_N_title as a ribbon
+ *                     in the top-left corner ("Industries we serve" look)
+ *   card_aspect:      CSS aspect-ratio for poster cards (default "2 / 1")
+ *   ribbon_bg:        Ribbon background color (default #8a2929 maroon)
+ *   ribbon_text:      Ribbon text color (default white)
  */
 
 import {
@@ -81,6 +88,15 @@ import {
 
 export type PmCardTextColor = 'light' | 'dark';
 export type PmCardAlign = 'left' | 'center';
+
+/**
+ * Card render mode. `icon-tile` is the original tight tile with a small
+ * icon/image at top and title/subtitle below. `poster` is the CDW-style
+ * "image fills the card" look — wide aspect-ratio card with the image
+ * as the background and the title rendered as a ribbon in the top-left
+ * corner. Used for the "Industries we serve" / "Who we serve" strip.
+ */
+export type PmCardStyle = 'icon-tile' | 'poster';
 
 export interface PmCardConfig {
   title: string;
@@ -139,6 +155,28 @@ export interface PmCardSectionConfig {
   imageSize?: number;
   /** Whether to show the ↗ hover arrow on the cards */
   showHoverArrow?: boolean;
+  /**
+   * Card render mode. Default `icon-tile` keeps the original tight
+   * tile (small icon at top, text below). `poster` switches to the
+   * image-fills-the-card layout with a top-left title ribbon — the
+   * "Industries we serve" look.
+   */
+  cardStyle?: PmCardStyle;
+  /**
+   * Aspect ratio of each card. CSS `aspect-ratio` value — e.g.
+   * `"2 / 1"`, `"16 / 9"`, `"3 / 2"`. Only meaningful in `poster`
+   * mode; ignored otherwise.
+   */
+  cardAspect?: string;
+  /**
+   * Color of the top-left ribbon label in `poster` mode. Defaults to
+   * a brand-tinted maroon (`#8a2929`).
+   */
+  ribbonBg?: string;
+  /**
+   * Text color for the ribbon label. Defaults to white.
+   */
+  ribbonText?: string;
   /** The cards themselves, in order */
   cards: PmCardConfig[];
 }
@@ -235,6 +273,10 @@ function buildConfigFromBlock(block: string): PmCardSectionConfig {
     iconColor: kv.icon_color || undefined,
     imageSize: coerceNumber(kv.image_size),
     showHoverArrow: coerceBool(kv.show_hover_arrow),
+    cardStyle: coerceEnum(kv.card_style, ['icon-tile', 'poster']),
+    cardAspect: kv.card_aspect || undefined,
+    ribbonBg: kv.ribbon_bg || undefined,
+    ribbonText: kv.ribbon_text || undefined,
     cards: collectCards(kv),
   };
 }

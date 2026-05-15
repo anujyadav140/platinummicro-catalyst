@@ -137,6 +137,10 @@ export function PmCardSection({ section }: PmCardSectionProps) {
     iconColor = DEFAULTS.iconColor,
     imageSize = DEFAULTS.imageSize,
     showHoverArrow = DEFAULTS.showHoverArrow,
+    cardStyle = 'icon-tile',
+    cardAspect = '2 / 1',
+    ribbonBg = '#8a2929',
+    ribbonText = '#ffffff',
     cards,
   } = section;
 
@@ -219,25 +223,38 @@ export function PmCardSection({ section }: PmCardSectionProps) {
           className="pm-card-grid"
           style={gridStyle}
         >
-          {cards.map((card, idx) => (
-            <li key={`${card.title}-${idx}`}>
-              <PmCard
-                card={card}
-                align={align}
-                iconSize={iconSize}
-                iconBg={iconBg}
-                iconColor={iconColor}
-                imageSize={imageSize}
-                cardBg={cardBg}
-                cardText={cardText}
-                cardBorder={cardBorder}
-                cardRadius={cardRadius}
-                cardPadding={cardPadding}
-                cardHoverAccent={cardHoverAccent}
-                showHoverArrow={showHoverArrow}
-              />
-            </li>
-          ))}
+          {cards.map((card, idx) =>
+            cardStyle === 'poster' ? (
+              <li key={`${card.title}-${idx}`}>
+                <PmPosterCard
+                  card={card}
+                  cardAspect={cardAspect}
+                  cardBorder={cardBorder}
+                  cardRadius={cardRadius}
+                  ribbonBg={ribbonBg}
+                  ribbonText={ribbonText}
+                />
+              </li>
+            ) : (
+              <li key={`${card.title}-${idx}`}>
+                <PmCard
+                  card={card}
+                  align={align}
+                  iconSize={iconSize}
+                  iconBg={iconBg}
+                  iconColor={iconColor}
+                  imageSize={imageSize}
+                  cardBg={cardBg}
+                  cardText={cardText}
+                  cardBorder={cardBorder}
+                  cardRadius={cardRadius}
+                  cardPadding={cardPadding}
+                  cardHoverAccent={cardHoverAccent}
+                  showHoverArrow={showHoverArrow}
+                />
+              </li>
+            ),
+          )}
         </ul>
       </div>
     </section>
@@ -371,6 +388,83 @@ function PmCard({
     </article>
   );
 
+  if (card.href) {
+    return (
+      <Link href={card.href} className="block h-full no-underline">
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
+}
+
+/**
+ * Poster-style card — image fills the whole card as a background and
+ * the title renders as a ribbon in the top-left corner. Used for the
+ * "Industries we serve" strip. Falls back to a solid bg (using
+ * iconBg) when the admin didn't supply an image so the card never
+ * renders fully empty.
+ */
+function PmPosterCard({
+  card,
+  cardAspect,
+  cardBorder,
+  cardRadius,
+  ribbonBg,
+  ribbonText,
+}: {
+  card: PmCardConfig;
+  cardAspect: string;
+  cardBorder: string;
+  cardRadius: string;
+  ribbonBg: string;
+  ribbonText: string;
+}) {
+  const cardStyle: React.CSSProperties = {
+    aspectRatio: cardAspect,
+    border: card.border ?? cardBorder,
+    borderRadius: cardRadius,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: card.bgColor ?? '#1a1a1a',
+    backgroundImage: card.imageUrl ? `url(${card.imageUrl})` : undefined,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    transition: 'transform 180ms ease, box-shadow 180ms ease',
+    cursor: card.href ? 'pointer' : 'default',
+  };
+  const inner = (
+    <article
+      className="pm-card pm-poster-card"
+      style={cardStyle}
+      title={card.subtitle ?? card.title}
+    >
+      {/* Top-left ribbon — short label, uppercase, brand maroon by
+          default. Slight bottom-right "fold" via a subtle drop shadow
+          so it reads as a banner rather than a flat sticker. */}
+      <div
+        className="absolute left-0 top-0 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.1em] leading-tight"
+        style={{
+          backgroundColor: ribbonBg,
+          color: ribbonText,
+          maxWidth: '70%',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        }}
+      >
+        {card.title}
+      </div>
+
+      {/* Optional subtitle — sits bottom-left as a faint caption.
+          Only renders when the admin supplied card_N_subtitle. */}
+      {card.subtitle && (
+        <div
+          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-[13px] font-medium text-white"
+        >
+          {card.subtitle}
+        </div>
+      )}
+    </article>
+  );
   if (card.href) {
     return (
       <Link href={card.href} className="block h-full no-underline">

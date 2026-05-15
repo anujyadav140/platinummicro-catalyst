@@ -298,6 +298,19 @@ image_size: <int>                    Pixel box for image / emoji glyph (default 
 
 == BEHAVIOR ==
 show_hover_arrow: true | false       Tiny ↗ that appears on hover (default true)
+
+== POSTER STYLE (Industries-we-serve look) ==
+card_style: icon-tile | poster       Default `icon-tile`. `poster` makes
+                                     each card_N_image fill the card as a
+                                     background and renders card_N_title
+                                     as a ribbon in the top-left corner.
+card_aspect: <css aspect-ratio>      Aspect ratio of each card in poster
+                                     mode. Default `"2 / 1"`. Try
+                                     `"16 / 9"` for wider, `"3 / 2"` for
+                                     a softer landscape.
+ribbon_bg: <color>                   Ribbon background color. Default
+                                     `#8a2929` (PMI maroon).
+ribbon_text: <color>                 Ribbon text color. Default white.
 -->
 ```
 
@@ -423,6 +436,47 @@ card_5_href: /dev/preview/category/components
 card_6_title: MSPs
 card_6_emoji: 🛠️
 card_6_href: /dev/preview/category/networking
+-->
+```
+
+**Poster cards — "Industries we serve" look**
+
+Image fills the card; the title sits in a maroon ribbon top-left. Add
+`card_style: poster` and supply `card_N_image` for each tile. Subtitle
+is optional — when present it appears as a faint caption along the
+bottom over a soft gradient.
+
+```text
+<!--pm-cards
+eyebrow: Who we serve
+title: Industries we serve
+columns: 3
+columns_md: 2
+columns_sm: 1
+gap: 24px
+padding_y: 88px
+
+card_style: poster
+card_aspect: 2 / 1
+card_border: 3px solid #5e1a1a
+card_radius: 0
+ribbon_bg: #8a2929
+ribbon_text: #ffffff
+
+card_1_title: System Integrators
+card_1_subtitle: Channel pricing, white-label logistics, BOM-driven rollouts
+card_1_image: https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=70
+card_1_href: /dev/preview/category/components
+
+card_2_title: Education
+card_2_subtitle: E-rate-aware procurement, classroom kitting, lifecycle takeback
+card_2_image: https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=70
+card_2_href: /dev/preview/category/computers
+
+card_3_title: SMB
+card_3_subtitle: Right-sized configurations and named account managers
+card_3_image: https://images.unsplash.com/photo-1552581234-26160f608093?auto=format&fit=crop&w=900&q=70
+card_3_href: /dev/preview/category/servers
 -->
 ```
 
@@ -585,6 +639,7 @@ on failed parses.
 | Add a new section to the homepage           | Create a new child under "PM Home Page Banners", drop a fence into its Description |
 | Add a search-page hero                      | BC → PM Page Banners → PM Search Page Banners → [section] → Description |
 | Re-seed the Browse by Category defaults     | Run `node scripts/pm-bootstrap-browse-by-category.mjs` |
+| Re-seed the "Industries we serve" poster strip | Run `node scripts/pm-bootstrap-who-we-serve.mjs` |
 | Re-seed the parent banner folders           | Run `node core/scripts/bc-bootstrap-page-banners.mjs` |
 
 ---
