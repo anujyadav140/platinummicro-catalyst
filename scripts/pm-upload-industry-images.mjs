@@ -50,14 +50,12 @@ const DOWNLOADS = 'C:/Users/anuj/Downloads';
 // when an image with the same label already exists in BC. Used when
 // the admin sends a refreshed version of the same image.
 const SOURCES = [
-  // System Integrators is intentionally commented out — admin is still
-  // sending the final cut. Uncomment + run once it lands in Downloads.
-  // { file: 'system-integrators.webp', label: 'System Integrators' },
-  { file: 'education.png', label: 'Education', replace: true },
-  { file: 'smb.png', label: 'SMB', replace: true },
-  { file: 'public-sector.jpg', label: 'Public Sector', replace: true },
-  { file: 'healthcare.jpg', label: 'Healthcare', replace: true },
-  { file: 'enterprise.jpg', label: 'Enterprise', replace: true },
+  { file: 'system-integrators.jpg', label: 'System Integrators' },
+  { file: 'education.png', label: 'Education' },
+  { file: 'smb.png', label: 'SMB' },
+  { file: 'public-sector.jpg', label: 'Public Sector' },
+  { file: 'healthcare.jpg', label: 'Healthcare' },
+  { file: 'enterprise.jpg', label: 'Enterprise' },
 ];
 
 const HIDDEN_PRODUCT_SKU = 'PM-INDUSTRIES';

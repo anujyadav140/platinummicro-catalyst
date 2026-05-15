@@ -42,10 +42,8 @@ const TARGET_NAME = 'Home Page Banner 3';
 // to a different URL by editing the card_N_image lines in BC admin.
 // Source: scripts/pm-upload-industry-images.log.json
 const IMG = {
-  // Awaiting refreshed system-integrators image from admin — leaving
-  // the original 25197 entry in place for now.
   systemIntegrators:
-    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25197/system-integrators__28810.1778866018.1280.1280.jpg?c=1',
+    'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25209/system-integrators__48007.1778867727.1280.1280.jpg?c=1',
   education:
     'https://cdn11.bigcommerce.com/s-1dedrz66md/products/6011/images/25204/education__05056.1778867322.1280.1280.png?c=1',
   smb:
