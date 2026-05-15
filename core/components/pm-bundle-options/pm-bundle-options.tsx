@@ -95,11 +95,16 @@ export function PmBundleOptions({
   };
 
   const select = (valueId: number | null) => {
-    // When the user re-selects "None", reset qty back to 1 so the next
-    // option pick starts from a sane state.
+    // Reset qty to 1 whenever the SELECTED option changes — including
+    // switching between two real options. Carrying the prior option's
+    // qty (e.g. 4 of a 4TB SSD) onto the next option (a 500GB SSD)
+    // surprised users — qty is conceptually a property of the current
+    // selection, not a session-wide counter. We only preserve qty
+    // when the user re-taps the SAME option.
+    const same = valueId === selectedValueId;
     onChange({
       selectedValueId: valueId,
-      quantity: valueId === null ? 1 : clamp(quantity),
+      quantity: same ? clamp(quantity) : 1,
     });
   };
   const setQty = (next: number) => {
