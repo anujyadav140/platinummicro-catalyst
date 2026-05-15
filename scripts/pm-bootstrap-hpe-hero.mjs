@@ -35,10 +35,10 @@ const TARGET_CATEGORY_ID = 310;
 const SLOT_PARENT_ID = 304;
 const TARGET_NAME = 'Home Page Banner 4 — Split (image left)';
 
-// Dark, enterprise-feeling server-rack photo. Admins should swap this
-// to an official HPE ProLiant DL asset from the HPE partner portal as
-// soon as one's pulled — just edit `image:` in BC. The renderer picks
-// up any URL (HPE CDN, BC media library, anywhere).
+// Placeholder image — admin should drop in the actual HPE ProLiant DL
+// Gen11 marketing asset (the cyan-arrow + stacked-servers composition)
+// by editing `image:` in BC admin → Banner 4 → Description. The
+// renderer accepts any URL (BC media library, HPE partner CDN, etc.).
 const HPE_HERO_IMAGE =
   'https://images.unsplash.com/photo-1591405351990-4726e331f141?auto=format&fit=crop&w=1600&q=85';
 
@@ -59,9 +59,9 @@ const FENCE_BLOCK = `<!--pm-hero
 image: ${HPE_HERO_IMAGE}
 image_fit: split
 image_position: left
-image_half_bg: #0a1430
-image_half_size: cover
-image_half_position: center
+image_half_bg: #f5f5f0
+image_half_size: contain
+image_half_position: 70% center
 content_half_bg: #f5f5f0
 text: dark
 accent: #00b388
@@ -69,7 +69,7 @@ eyebrow: HPE × AMD · Better together
 headline: ProLiant DL Gen11. Built with AMD EPYC.
 body: Up to 96 cores per socket, breakthrough AI performance, and silicon-rooted security in every rack. Sourced direct, racked and burned in by our team, freighted from Southern California — your authorized HPE source.
 cta_label: Browse HPE ProLiant
-cta_href: /dev/preview/search?heading=HPE
+cta_href: /dev/preview/search?q=ProLiant+EPYC&heading=HPE+ProLiant+with+AMD+EPYC
 height: 380px
 padding_y: 0
 content_padding: 56px 64px
