@@ -149,6 +149,19 @@ export interface PmBundleModifier {
    * slots, can't bundle more than 4 drives").
    */
   maxQty?: number;
+  /**
+   * When true, customers can select MULTIPLE options simultaneously
+   * (checkbox-style), each with its own qty stepper. When false (the
+   * default), only one option at a time (radio-style). Set via
+   * `(multi)` / `[multi]` in the modifier's display name in BC —
+   * suffix is stripped from the rendered heading.
+   *
+   * Examples:
+   *   "Bundle and get 3% off"            → single-select (radios)
+   *   "Bundle and get 3% off (multi)"    → multi-select (checkboxes)
+   *   "Add drives (max 4) (multi)"       → multi + cap on each pick
+   */
+  multiSelect?: boolean;
   /** All admin-configured option values for this modifier */
   values: PmBundleOption[];
 }
@@ -406,6 +419,25 @@ function parseMaxQtyFromDisplayName(rawName: string): {
     maxQty: valid ? n : undefined,
     cleanedName: cleanedName || rawName,
   };
+}
+
+/**
+ * Detect the `(multi)` / `[multi]` flag in a modifier display name.
+ * When present, the modifier becomes multi-select (checkbox UI, qty
+ * stepper per pick). The flag is stripped from the rendered heading.
+ */
+function parseMultiSelectFromDisplayName(rawName: string): {
+  multiSelect: boolean;
+  cleanedName: string;
+} {
+  const m = rawName.match(/[(\[]\s*multi\s*[)\]]/i);
+  if (!m) return { multiSelect: false, cleanedName: rawName };
+  const cleanedName = rawName
+    .slice(0, m.index)
+    .concat(rawName.slice((m.index ?? 0) + m[0].length))
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return { multiSelect: true, cleanedName: cleanedName || rawName };
 }
 
 /**
@@ -825,16 +857,18 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
           });
         }
         if (values.length > 0) {
-          const { maxQty, cleanedName } = parseMaxQtyFromDisplayName(
-            opt.displayName,
-          );
+          // Parse both `(max N)` and `(multi)` flags. They can appear
+          // in any order — process one at a time, threading the
+          // cleaned name through.
+          const maxParsed = parseMaxQtyFromDisplayName(opt.displayName);
+          const multiParsed = parseMultiSelectFromDisplayName(maxParsed.cleanedName);
           bundleModifiers.push({
             modifierId: opt.entityId,
-            // Heading rendered on PDP — the `(max N)` admin suffix is
-            // stripped so it doesn't bleed into the user-facing text.
-            displayName: cleanedName,
+            // Heading rendered on PDP — all admin suffixes stripped.
+            displayName: multiParsed.cleanedName,
             isRequired: opt.isRequired,
-            maxQty,
+            maxQty: maxParsed.maxQty,
+            multiSelect: multiParsed.multiSelect,
             values,
           });
         }

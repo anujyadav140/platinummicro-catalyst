@@ -35,11 +35,23 @@ import type {
   PmBundleOption,
 } from '~/lib/pm-product-by-slug';
 
+/** One bundle pick — option + qty. Modifier-level picks list these. */
+export interface PmBundlePick {
+  valueId: number;
+  quantity: number;
+}
+
 export interface PmBundleOptionsProps {
   modifier: PmBundleModifier;
-  selectedValueId: number | null;
-  quantity: number;
-  onChange: (next: { selectedValueId: number | null; quantity: number }) => void;
+  /**
+   * Currently-selected picks for this modifier. Empty array = "None"
+   * picked. Single-select modifiers always have 0 or 1 entries;
+   * multi-select can have 0..N. Order is preserved (most recent pick
+   * appended).
+   */
+  picks: PmBundlePick[];
+  /** Callback fired with the new picks list whenever it changes. */
+  onChange: (nextPicks: PmBundlePick[]) => void;
 }
 
 function formatUSD(value: number): string {
@@ -81,48 +93,74 @@ export function resolveUnitPriceAtQty(
 
 export function PmBundleOptions({
   modifier,
-  selectedValueId,
-  quantity,
+  picks,
   onChange,
 }: PmBundleOptionsProps) {
-  // Hard upper bound for the qty stepper. Modifier-level cap from the
-  // admin-set `(max N)` suffix on the modifier name; can be overridden
-  // per-option by a `(max N)` on the option label. We resolve the
-  // *effective* cap based on the currently-selected option (option's
-  // cap wins, else modifier's cap, else unbounded).
-  const maxQty = modifier.maxQty;
-  const selectedValue = modifier.values.find(
-    (v) => v.valueId === selectedValueId,
-  );
-  const effectiveMaxQty = selectedValue?.maxQty ?? maxQty;
-  const clamp = (n: number, capOverride?: number): number => {
+  // Modifier-level cap from `(max N)` on the modifier name. Each option
+  // can override via its own label suffix; we resolve per-row below.
+  const modifierMaxQty = modifier.maxQty;
+  const isMulti = modifier.multiSelect === true;
+
+  // Quick lookup: is this option currently picked? In single mode picks
+  // has 0 or 1 entry; in multi mode it can have many.
+  const findPickIdx = (valueId: number): number =>
+    picks.findIndex((p) => p.valueId === valueId);
+
+  const clamp = (n: number, cap: number | undefined): number => {
     const lo = Math.max(1, Math.floor(Number(n) || 1));
-    const cap = capOverride ?? effectiveMaxQty;
     return cap != null ? Math.min(lo, cap) : lo;
   };
 
-  const select = (valueId: number | null) => {
-    // Reset qty to 1 whenever the SELECTED option changes — including
-    // switching between two real options. Carrying the prior option's
-    // qty (e.g. 4 of a 4TB SSD) onto the next option (a 500GB SSD)
-    // surprised users — qty is conceptually a property of the current
-    // selection, not a session-wide counter. We only preserve qty
-    // when the user re-taps the SAME option (and clamp it against
-    // THAT option's effective cap).
-    const same = valueId === selectedValueId;
-    const newOpt = modifier.values.find((v) => v.valueId === valueId);
-    const newCap = newOpt?.maxQty ?? maxQty;
-    onChange({
-      selectedValueId: valueId,
-      quantity: same ? clamp(quantity, newCap) : 1,
-    });
+  /**
+   * Toggle/select an option. Behavior depends on modifier.multiSelect:
+   *
+   *   Single (radio): replaces picks with [valueId] (or [] if "None").
+   *                   Resets qty to 1 when switching to a different
+   *                   option; preserves qty when re-tapping the same.
+   *
+   *   Multi (checkbox): toggles inclusion. New picks are appended at
+   *                     qty=1; existing picks are removed entirely on
+   *                     toggle-off. "None" (valueId=null) clears all
+   *                     picks for this modifier.
+   */
+  const togglePick = (valueId: number | null) => {
+    if (valueId === null) {
+      onChange([]);
+      return;
+    }
+    if (isMulti) {
+      const idx = findPickIdx(valueId);
+      if (idx >= 0) {
+        // Already picked → remove.
+        onChange(picks.filter((_, i) => i !== idx));
+      } else {
+        // Not yet picked → append at qty=1.
+        onChange([...picks, { valueId, quantity: 1 }]);
+      }
+      return;
+    }
+    // Single mode — replace the picks list entirely.
+    const existingIdx = findPickIdx(valueId);
+    if (existingIdx >= 0) {
+      // Re-tap of the only selected option: keep qty.
+      onChange([picks[existingIdx]]);
+    } else {
+      onChange([{ valueId, quantity: 1 }]);
+    }
   };
-  const setQty = (next: number) => {
-    onChange({
-      selectedValueId,
-      quantity: clamp(next),
-    });
+
+  /** Update qty for a specific pick. Identifies the pick by valueId. */
+  const setPickQty = (valueId: number, nextQty: number, capForPick?: number) => {
+    const next = picks.map((p) =>
+      p.valueId === valueId ? { ...p, quantity: clamp(nextQty, capForPick) } : p,
+    );
+    onChange(next);
   };
+
+  // "None" row checked state: in BOTH modes, "None" is checked when the
+  // picks list is empty. (Multi-select shows None too, as a clear-all
+  // shortcut.)
+  const noneChecked = picks.length === 0;
 
   return (
     <div className="rounded-lg border border-pm-ink-200 bg-pm-paper">
@@ -140,48 +178,48 @@ export function PmBundleOptions({
             option. */}
         {!modifier.isRequired && (
           <BundleOptionRow
-            checked={selectedValueId === null}
-            onSelect={() => select(null)}
+            checked={noneChecked}
+            indicator={isMulti ? 'checkbox' : 'radio'}
+            onSelect={() => togglePick(null)}
             label="None"
-            sublabel="Just the base product"
+            sublabel={isMulti ? 'Clear all picks' : 'Just the base product'}
           />
         )}
 
         {modifier.values.map((v) => {
-          const isSelected = selectedValueId === v.valueId;
-          // Per-unit price at THIS row's currently-displayed qty. For the
-          // unselected resting state we show the base ("$X each"); when
-          // selected, the inline qty expander also uses the tier-resolved
-          // number so the user sees the price flex as they bump the qty.
-          const effectiveQty = isSelected ? Math.max(1, quantity) : 1;
+          const pickIdx = findPickIdx(v.valueId);
+          const isSelected = pickIdx >= 0;
+          const pickQty = isSelected ? picks[pickIdx].quantity : 1;
+          // Per-unit price at THIS row's currently-displayed qty. Unchecked
+          // rows show the base price (`$X each`); checked rows reflect any
+          // bulk-pricing tier that kicks in at qty 2+.
+          const effectiveQty = Math.max(1, pickQty);
           const unitPriceAtQty = resolveUnitPriceAtQty(v, effectiveQty);
           const rowLineTotal = unitPriceAtQty * effectiveQty;
-          // Per-option cap (from the option's own label) takes priority
-          // over the modifier-level cap. Lets admins say "this NAS has
-          // 4 NVMe slots but 8 SATA slots" on the same modifier.
-          const effectiveMaxQty = v.maxQty ?? maxQty;
+          // Per-option cap (label `(max N)`) wins over modifier-level cap.
+          const rowMaxQty = v.maxQty ?? modifierMaxQty;
           return (
             <BundleOptionRow
               key={v.valueId}
               checked={isSelected}
-              onSelect={() => select(v.valueId)}
+              indicator={isMulti ? 'checkbox' : 'radio'}
+              onSelect={() => togglePick(v.valueId)}
               label={v.label}
               sublabel={v.productSku}
               priceLabel={`${formatUSD(unitPriceAtQty)} each`}
               imageUrl={v.productImageUrl}
               inStock={v.productInStock}
-              // Qty stepper appears inline inside the selected row only.
-              // This is what the user expects: "this bundle item × N".
+              // Qty stepper appears inline inside each selected row. In
+              // multi-select this means multiple inline steppers — one
+              // per checked option — exactly the "buy a few of each" UX.
               expandedQty={
                 isSelected
                   ? {
-                      quantity,
-                      // Use the per-option override when present; falls
-                      // back to the modifier-level cap.
-                      maxQty: effectiveMaxQty,
-                      onIncrement: () => setQty(quantity + 1),
-                      onDecrement: () => setQty(quantity - 1),
-                      onInput: (n) => setQty(n),
+                      quantity: pickQty,
+                      maxQty: rowMaxQty,
+                      onIncrement: () => setPickQty(v.valueId, pickQty + 1, rowMaxQty),
+                      onDecrement: () => setPickQty(v.valueId, pickQty - 1, rowMaxQty),
+                      onInput: (n) => setPickQty(v.valueId, n, rowMaxQty),
                       addOnLabel: formatUSD(rowLineTotal),
                     }
                   : undefined
@@ -198,14 +236,23 @@ export function PmBundleOptions({
 
 interface BundleOptionRowProps {
   checked: boolean;
+  /**
+   * Visual style of the selection indicator. `radio` is the circular
+   * one-of-N indicator (single-select modifiers). `checkbox` is the
+   * square multi-select indicator (multi-select modifiers). Both share
+   * the same checkmark + brand fill style; only the corner radius
+   * changes.
+   */
+  indicator?: 'radio' | 'checkbox';
   onSelect: () => void;
   label: string;
   sublabel?: string;
   priceLabel?: string;
   imageUrl?: string;
   inStock?: boolean;
-  // When provided, the row is the selected one and renders the inline
-  // qty stepper + add-on subtotal beneath the radio header.
+  // When provided, the row is selected and renders the inline qty
+  // stepper + add-on subtotal beneath the radio header. In multi mode
+  // multiple rows can each render their own stepper independently.
   expandedQty?: {
     quantity: number;
     /** Hard upper bound. Undefined = unlimited. */
@@ -219,6 +266,7 @@ interface BundleOptionRowProps {
 
 function BundleOptionRow({
   checked,
+  indicator = 'radio',
   onSelect,
   label,
   sublabel,
@@ -233,8 +281,8 @@ function BundleOptionRow({
         checked ? 'bg-pm-tan-pale' : 'bg-white'
       }`}
     >
-      {/* Header — radio + image + label/sku/price. The full row is the
-          click target so users can pick by anywhere along the line. */}
+      {/* Header — indicator + image + label/sku/price. The full row is
+          the click target so users can toggle anywhere along the line. */}
       <button
         type="button"
         onClick={onSelect}
@@ -243,7 +291,9 @@ function BundleOptionRow({
       >
         <span
           aria-hidden
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border transition-colors ${
+            indicator === 'checkbox' ? 'rounded-[4px]' : 'rounded-full'
+          } ${
             checked
               ? 'border-pm-terracotta bg-pm-terracotta text-white'
               : 'border-pm-ink-300 bg-white'

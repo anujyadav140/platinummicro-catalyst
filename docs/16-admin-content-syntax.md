@@ -737,6 +737,44 @@ Label → save.**
 The `(max N)` suffix is stripped from the user-facing label at render
 time, so customers see clean copy.
 
+### Multi-select bundles (`(multi)` flag)
+
+By default, bundle options are single-select — radio rows, only one
+option active at a time. For bundles where customers should be able to
+**buy multiple add-ons together** (e.g. "pick any combination of SSDs
+to fill the slots"), add `(multi)` or `[multi]` to the modifier's
+display name:
+
+| Modifier Display name                 | Behavior                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `Bundle and get 3% off`               | Single-select. Radios. One option active at a time.                       |
+| `Bundle and get 3% off (multi)`       | Multi-select. Checkboxes. User can check several options, each with its own qty stepper. |
+| `Add drives (max 4) (multi)`          | Multi-select with a 4-cap on each picked option. |
+
+In multi-select mode:
+
+- Each checked option gets its **own inline qty stepper** so the user
+  can configure "2 of WD 4TB and 4 of WD 500GB" in one go.
+- The **bundle add-on price** is the sum of all picked rows.
+- The **base-product discount** (the `-3% off` adjuster on each option
+  value) applies once per modifier — picking 3 options from the same
+  modifier doesn't stack the discount 3 times.
+- Each pick becomes a **separate cart line** at checkout. So the
+  example above pushes:
+    - 1× the base NAS
+    - 2× WD 4TB SSD
+    - 4× WD 500GB SSD
+- Picking "None" clears all picks for that modifier (same shortcut as
+  single-select).
+
+The `(multi)` and `(max N)` flags can be combined in any order; both
+are stripped from the user-facing heading.
+
+> Tip: don't combine `(multi)` with the BC modifier's "Required" flag.
+> "Required + multi" semantics are unclear (must pick at least one of
+> many?) and the storefront just defaults the first option as picked
+> when required is set, regardless of multi.
+
 ### ⚠ Critical gotcha — linked products must be visible
 
 If the linked product has **Visibility: Hidden** in BC, the BC

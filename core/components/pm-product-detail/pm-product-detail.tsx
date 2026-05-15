@@ -121,23 +121,24 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
   const { trackView } = usePmRecentlyViewed();
   const [qty, setQty] = useState<number>(1);
   const [specsExpanded, setSpecsExpanded] = useState(false);
-  // Per-modifier selection state. Keyed by BC modifier entityId. A null
-  // value means "None" — no bundle item added for that modifier.
-  // Default qty=1 because the option is meaningless at qty=0.
+  // Per-modifier picks. Keyed by BC modifier entityId. Each value is an
+  // ordered list of (valueId, quantity) tuples. Single-select modifiers
+  // hold 0 or 1 picks; multi-select modifiers can hold 0..N. An empty
+  // picks array means "None" — no bundle item added for that modifier.
   const [bundleState, setBundleState] = useState<
-    Record<number, { selectedValueId: number | null; quantity: number }>
+    Record<number, { picks: Array<{ valueId: number; quantity: number }> }>
   >(() => {
-    const init: Record<number, { selectedValueId: number | null; quantity: number }> = {};
+    const init: Record<number, { picks: Array<{ valueId: number; quantity: number }> }> = {};
     for (const m of product.bundleModifiers ?? []) {
-      // Honor BC's isDefault flag on the first value when present —
-      // otherwise default to "None" (null) for optional modifiers,
-      // and to the first value for required ones.
-      const defaultValue = m.values.find((v) =>
-        m.isRequired ? true : false,
-      );
+      // Required modifiers start with the first value pre-picked. Multi
+      // doesn't change this — admin shouldn't mark a required modifier
+      // as multi-select (the "must pick at least one" semantics get
+      // murky), but if they do, we still seed a single default pick.
+      const defaultValue = m.isRequired ? m.values[0] : undefined;
       init[m.modifierId] = {
-        selectedValueId: defaultValue ? defaultValue.valueId : null,
-        quantity: 1,
+        picks: defaultValue
+          ? [{ valueId: defaultValue.valueId, quantity: 1 }]
+          : [],
       };
     }
     return init;
@@ -224,27 +225,31 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
     }> = [];
     for (const m of product.bundleModifiers ?? []) {
       const state = bundleState[m.modifierId];
-      if (!state || state.selectedValueId === null) continue;
-      const value = m.values.find((v) => v.valueId === state.selectedValueId);
-      if (!value) continue;
-      const qtyHere = Math.max(1, state.quantity);
-      const unitPriceValue = resolveUnitPriceAtQty(value, qtyHere);
-      const unitPriceLabel = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(unitPriceValue);
-      picks.push({
-        productId: value.productId,
-        sku: value.productSku,
-        name: value.productName,
-        href: value.productHref,
-        imageUrl: value.productImageUrl,
-        unitPriceValue,
-        unitPriceLabel,
-        quantity: qtyHere,
-        inStock: value.productInStock,
-        basePriceAdjuster: value.basePriceAdjuster,
-      });
+      if (!state || state.picks.length === 0) continue;
+      // Iterate each pick — single-select modifiers have 1 pick;
+      // multi-select can have many. Each becomes its own cart line.
+      for (const pick of state.picks) {
+        const value = m.values.find((v) => v.valueId === pick.valueId);
+        if (!value) continue;
+        const qtyHere = Math.max(1, pick.quantity);
+        const unitPriceValue = resolveUnitPriceAtQty(value, qtyHere);
+        const unitPriceLabel = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        }).format(unitPriceValue);
+        picks.push({
+          productId: value.productId,
+          sku: value.productSku,
+          name: value.productName,
+          href: value.productHref,
+          imageUrl: value.productImageUrl,
+          unitPriceValue,
+          unitPriceLabel,
+          quantity: qtyHere,
+          inStock: value.productInStock,
+          basePriceAdjuster: value.basePriceAdjuster,
+        });
+      }
     }
     return picks;
   }, [product.bundleModifiers, bundleState]);
@@ -262,23 +267,26 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
   );
 
   // Effective base unit price after applying whatever BC's modifier
-  // value adjusters do. Percentage adjusters multiply (`-3` → ×0.97);
-  // relative adjusters add (`-50` → $50 off). When the admin left the
-  // adjuster empty the base passes through unchanged. This number IS
-  // BC's data — `value.basePriceAdjuster` came straight from BC's
-  // `adjusters.price` field via REST. No parsing of display names, no
-  // hardcoded percentages.
+  // value adjusters do. The discount applies ONCE per modifier (using
+  // the first picked option's adjuster) — even in multi-select mode
+  // where multiple picks of the same modifier exist, we don't want to
+  // stack -3% × N times. Percentage adjusters multiply (`-3` → ×0.97);
+  // relative adjusters add (`-50` → $50 off).
   const effectiveBaseUnit = useMemo(() => {
     if (typeof product.priceValue !== 'number') return 0;
     let base = product.priceValue;
-    for (const pick of activeBundlePicks) {
-      const adj = pick.basePriceAdjuster;
+    for (const m of product.bundleModifiers ?? []) {
+      const state = bundleState[m.modifierId];
+      if (!state || state.picks.length === 0) continue;
+      const firstPickValueId = state.picks[0].valueId;
+      const firstOpt = m.values.find((v) => v.valueId === firstPickValueId);
+      const adj = firstOpt?.basePriceAdjuster;
       if (!adj) continue;
       if (adj.type === 'percentage') base = base * (1 + adj.value / 100);
       else if (adj.type === 'relative') base = base + adj.value;
     }
     return base;
-  }, [product.priceValue, activeBundlePicks]);
+  }, [product.priceValue, product.bundleModifiers, bundleState]);
 
   // Final price preview: (effective base + bundle add-ons) × cart qty.
   const previewTotalLabel = useMemo(() => {
@@ -554,14 +562,11 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                     <PmBundleOptions
                       key={mod.modifierId}
                       modifier={mod}
-                      selectedValueId={
-                        bundleState[mod.modifierId]?.selectedValueId ?? null
-                      }
-                      quantity={bundleState[mod.modifierId]?.quantity ?? 1}
-                      onChange={(next) =>
+                      picks={bundleState[mod.modifierId]?.picks ?? []}
+                      onChange={(nextPicks) =>
                         setBundleState((prev) => ({
                           ...prev,
-                          [mod.modifierId]: next,
+                          [mod.modifierId]: { picks: nextPicks },
                         }))
                       }
                     />
