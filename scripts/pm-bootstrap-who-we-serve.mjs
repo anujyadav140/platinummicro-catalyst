@@ -76,32 +76,26 @@ ribbon_bg: #8a2929
 ribbon_text: #ffffff
 
 card_1_title: System Integrators
-card_1_subtitle: Channel pricing, white-label logistics, BOM-driven rollouts
 card_1_image: ${IMG.systemIntegrators}
 card_1_href: /dev/preview/category/components
 
 card_2_title: Education
-card_2_subtitle: E-rate-aware procurement, classroom kitting, lifecycle takeback
 card_2_image: ${IMG.education}
 card_2_href: /dev/preview/category/computers
 
 card_3_title: SMB
-card_3_subtitle: Right-sized configurations and named account managers
 card_3_image: ${IMG.smb}
 card_3_href: /dev/preview/category/servers
 
 card_4_title: Public Sector
-card_4_subtitle: GSA-aligned procurement and cooperative contract vehicles
 card_4_image: ${IMG.publicSector}
 card_4_href: /dev/preview/category/servers
 
 card_5_title: Healthcare
-card_5_subtitle: HIPAA-aware sourcing and asset tagging for clinical sites
 card_5_image: ${IMG.healthcare}
 card_5_href: /dev/preview/category/storage
 
 card_6_title: Enterprise
-card_6_subtitle: Dedicated account managers and global drop-ship
 card_6_image: ${IMG.enterprise}
 card_6_href: /dev/preview/category/servers
 -->`;
