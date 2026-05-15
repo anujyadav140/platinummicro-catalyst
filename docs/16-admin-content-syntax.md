@@ -713,6 +713,30 @@ Different modifiers on the SAME product can have different caps (e.g.
 a server with `Add RAM (max 8)` AND `Add HDDs (max 4)` works fine —
 each modifier reads its own suffix).
 
+#### Per-option overrides
+
+Different options inside the SAME modifier can also have different
+caps. Just append `(max N)` to the **option label** (not the modifier
+name) and the qty stepper uses THAT cap whenever the option is
+selected. The option-level cap takes priority over the modifier-level
+cap.
+
+Example — one NAS, one modifier, two options with different fit:
+
+| Modifier name              | Option label                                  | Effective cap when option is selected |
+| -------------------------- | --------------------------------------------- | -------------------------------------- |
+| `Bundle and get 3% off (max 4)` | `WD 4TB NVMe SSD`                       | 4 (inherits from modifier)            |
+| `Bundle and get 3% off (max 4)` | `WD 500GB SATA SSD (max 8)`             | 8 (option override wins)              |
+| `Bundle and get 3% off`         | `WD 500GB SATA SSD (max 8)`             | 8 (no modifier cap, option still caps) |
+| `Bundle and get 3% off`         | `WD 500GB SATA SSD`                     | unlimited (no caps set)               |
+
+Edit per-option: **BC admin → Products → [the bundle product] →
+Modifiers → click the modifier → click the option_value → change the
+Label → save.**
+
+The `(max N)` suffix is stripped from the user-facing label at render
+time, so customers see clean copy.
+
 ### ⚠ Critical gotcha — linked products must be visible
 
 If the linked product has **Visibility: Hidden** in BC, the BC

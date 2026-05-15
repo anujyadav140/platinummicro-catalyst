@@ -90,8 +90,20 @@ export interface PmBundleBulkTier {
 export interface PmBundleOption {
   /** BC modifier-value entityId — opaque, used as the React key */
   valueId: number;
-  /** Display label set by the admin in BC (e.g. "WD 4TB Blue SSD") */
+  /**
+   * Display label set by the admin in BC. Admin can append `(max N)`
+   * or `[max:N]` to set a per-option qty cap that OVERRIDES the
+   * modifier-level cap — useful when different bundle items have
+   * different physical-fit constraints (e.g. 4 NVMe SSDs vs 8 SATA
+   * SSDs in the same NAS). The suffix is stripped at render time.
+   */
   label: string;
+  /**
+   * Per-option hard cap on bundle qty. Parsed from `(max N)` in the
+   * BC label. When set, this overrides the modifier-level `maxQty`.
+   * Use it for options with their own slot-count constraint.
+   */
+  maxQty?: number;
   /** Linked product — what gets added to the cart at the chosen quantity */
   productId: number;
   productSku: string;
@@ -796,12 +808,17 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
           if (typeof v.productId !== 'number') continue;
           const linkedTemplate = productById.get(v.productId);
           if (!linkedTemplate) continue;
+          // Parse `(max N)` out of the option label if present. Suffix
+          // is admin-facing → strip from the user-visible label, same
+          // convention as the modifier display_name.
+          const rawLabel = v.label?.trim() || linkedTemplate.productName;
+          const { maxQty: optionMaxQty, cleanedName: labelClean } =
+            parseMaxQtyFromDisplayName(rawLabel);
           values.push({
             ...linkedTemplate,
             valueId: v.entityId,
-            // Prefer the admin-set label from BC; fall back to the
-            // linked product's own name if the admin left it blank.
-            label: v.label?.trim() || linkedTemplate.productName,
+            label: labelClean,
+            maxQty: optionMaxQty,
             // Whatever BC says picking this option does to the base price.
             // Undefined when the admin didn't set an adjuster.
             basePriceAdjuster: adjustersByValueId.get(v.entityId),

@@ -85,13 +85,20 @@ export function PmBundleOptions({
   quantity,
   onChange,
 }: PmBundleOptionsProps) {
-  // Hard upper bound for the qty stepper. Comes from the admin-set
-  // `(max N)` suffix on the modifier display name in BC. When absent,
-  // there's no cap — user can pick any positive integer.
+  // Hard upper bound for the qty stepper. Modifier-level cap from the
+  // admin-set `(max N)` suffix on the modifier name; can be overridden
+  // per-option by a `(max N)` on the option label. We resolve the
+  // *effective* cap based on the currently-selected option (option's
+  // cap wins, else modifier's cap, else unbounded).
   const maxQty = modifier.maxQty;
-  const clamp = (n: number): number => {
+  const selectedValue = modifier.values.find(
+    (v) => v.valueId === selectedValueId,
+  );
+  const effectiveMaxQty = selectedValue?.maxQty ?? maxQty;
+  const clamp = (n: number, capOverride?: number): number => {
     const lo = Math.max(1, Math.floor(Number(n) || 1));
-    return maxQty != null ? Math.min(lo, maxQty) : lo;
+    const cap = capOverride ?? effectiveMaxQty;
+    return cap != null ? Math.min(lo, cap) : lo;
   };
 
   const select = (valueId: number | null) => {
@@ -100,11 +107,14 @@ export function PmBundleOptions({
     // qty (e.g. 4 of a 4TB SSD) onto the next option (a 500GB SSD)
     // surprised users — qty is conceptually a property of the current
     // selection, not a session-wide counter. We only preserve qty
-    // when the user re-taps the SAME option.
+    // when the user re-taps the SAME option (and clamp it against
+    // THAT option's effective cap).
     const same = valueId === selectedValueId;
+    const newOpt = modifier.values.find((v) => v.valueId === valueId);
+    const newCap = newOpt?.maxQty ?? maxQty;
     onChange({
       selectedValueId: valueId,
-      quantity: same ? clamp(quantity) : 1,
+      quantity: same ? clamp(quantity, newCap) : 1,
     });
   };
   const setQty = (next: number) => {
@@ -146,6 +156,10 @@ export function PmBundleOptions({
           const effectiveQty = isSelected ? Math.max(1, quantity) : 1;
           const unitPriceAtQty = resolveUnitPriceAtQty(v, effectiveQty);
           const rowLineTotal = unitPriceAtQty * effectiveQty;
+          // Per-option cap (from the option's own label) takes priority
+          // over the modifier-level cap. Lets admins say "this NAS has
+          // 4 NVMe slots but 8 SATA slots" on the same modifier.
+          const effectiveMaxQty = v.maxQty ?? maxQty;
           return (
             <BundleOptionRow
               key={v.valueId}
@@ -162,7 +176,9 @@ export function PmBundleOptions({
                 isSelected
                   ? {
                       quantity,
-                      maxQty,
+                      // Use the per-option override when present; falls
+                      // back to the modifier-level cap.
+                      maxQty: effectiveMaxQty,
                       onIncrement: () => setQty(quantity + 1),
                       onDecrement: () => setQty(quantity - 1),
                       onInput: (n) => setQty(n),
