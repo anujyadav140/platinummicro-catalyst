@@ -160,7 +160,7 @@ const cachedSlotFields = unstable_cache(
       return { description: '' };
     }
   },
-  ['pm-page-banner-fields-v19'],
+  ['pm-page-banner-fields-v20'],
   { revalidate: 120, tags: ['pm-page-banners'] },
 );
 

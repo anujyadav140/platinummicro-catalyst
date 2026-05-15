@@ -35,17 +35,26 @@ const TARGET_CATEGORY_ID = 310;
 const SLOT_PARENT_ID = 304;
 const TARGET_NAME = 'Home Page Banner 4 — Split (image left)';
 
-// Unsplash server-room photo as the initial seed — admins swap to an
-// official HPE asset via BC media manager once they have one. The
-// `auto=format&fit=crop&w=1600&q=85` query params let Unsplash deliver
-// a sharp landscape crop without us hosting anything.
+// Dark, enterprise-feeling server-rack photo. Admins should swap this
+// to an official HPE ProLiant DL asset from the HPE partner portal as
+// soon as one's pulled — just edit `image:` in BC. The renderer picks
+// up any URL (HPE CDN, BC media library, anywhere).
 const HPE_HERO_IMAGE =
-  'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=85';
+  'https://images.unsplash.com/photo-1591405351990-4726e331f141?auto=format&fit=crop&w=1600&q=85';
 
-// CTA links to the HPE brand listing — `heading=HPE` matches how every
-// other brand link on the site routes through /search?heading={brand}.
-// Admin can swap to a deep link (e.g. a custom ProLiant category page)
-// any time.
+// Copy borrows HPE's "HPE × AMD: Better Together" positioning and the
+// ProLiant DL Gen11 messaging that ran at HPE's event — refactored so
+// PMI's partner credentials land alongside the product story:
+//   1. Eyebrow flags the AMD/HPE partnership
+//   2. Headline names the product family and chip
+//   3. Body leads with one HPE benchmark, then closes on what PMI
+//      does that BC.com / hpe.com don't (rack + burn-in + ship from
+//      our Southern California warehouse)
+//   4. CTA goes to the HPE brand listing — admin can swap to a deep
+//      link (e.g. a custom ProLiant category) anytime.
+//
+// Accent #00b388 is HPE's brand green — matches the partner-portal
+// callouts so the button reads as authentically HPE-branded.
 const FENCE_BLOCK = `<!--pm-hero
 image: ${HPE_HERO_IMAGE}
 image_fit: split
@@ -56,10 +65,10 @@ image_half_position: center
 content_half_bg: #f5f5f0
 text: dark
 accent: #00b388
-eyebrow: HPE official partner
-headline: Discover the HPE ProLiant DL series.
-body: Gen11 rack servers built for hybrid workloads — sourced direct, racked and burned in by our team, freighted from Southern California.
-cta_label: View ProLiant servers
+eyebrow: HPE × AMD · Better together
+headline: ProLiant DL Gen11. Built with AMD EPYC.
+body: Up to 96 cores per socket, breakthrough AI performance, and silicon-rooted security in every rack. Sourced direct, racked and burned in by our team, freighted from Southern California — your authorized HPE source.
+cta_label: Browse HPE ProLiant
 cta_href: /dev/preview/search?heading=HPE
 height: 380px
 padding_y: 0
