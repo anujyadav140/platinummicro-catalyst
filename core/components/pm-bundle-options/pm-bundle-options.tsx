@@ -85,18 +85,27 @@ export function PmBundleOptions({
   quantity,
   onChange,
 }: PmBundleOptionsProps) {
+  // Hard upper bound for the qty stepper. Comes from the admin-set
+  // `(max N)` suffix on the modifier display name in BC. When absent,
+  // there's no cap — user can pick any positive integer.
+  const maxQty = modifier.maxQty;
+  const clamp = (n: number): number => {
+    const lo = Math.max(1, Math.floor(Number(n) || 1));
+    return maxQty != null ? Math.min(lo, maxQty) : lo;
+  };
+
   const select = (valueId: number | null) => {
     // When the user re-selects "None", reset qty back to 1 so the next
     // option pick starts from a sane state.
     onChange({
       selectedValueId: valueId,
-      quantity: valueId === null ? 1 : Math.max(1, quantity),
+      quantity: valueId === null ? 1 : clamp(quantity),
     });
   };
   const setQty = (next: number) => {
     onChange({
       selectedValueId,
-      quantity: Math.max(1, Math.floor(Number(next) || 1)),
+      quantity: clamp(next),
     });
   };
 
@@ -148,6 +157,7 @@ export function PmBundleOptions({
                 isSelected
                   ? {
                       quantity,
+                      maxQty,
                       onIncrement: () => setQty(quantity + 1),
                       onDecrement: () => setQty(quantity - 1),
                       onInput: (n) => setQty(n),
@@ -177,6 +187,8 @@ interface BundleOptionRowProps {
   // qty stepper + add-on subtotal beneath the radio header.
   expandedQty?: {
     quantity: number;
+    /** Hard upper bound. Undefined = unlimited. */
+    maxQty?: number;
     onIncrement: () => void;
     onDecrement: () => void;
     onInput: (n: number) => void;
@@ -260,60 +272,77 @@ function BundleOptionRow({
           row visually so the user sees "this WD SSD × N" as one thing.
           Click handlers stopPropagation so qty taps don't bubble up to
           the row-level onSelect. */}
-      {expandedQty && (
-        <div className="flex items-center justify-between gap-3 border-t border-pm-ink-200/60 bg-white/70 px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-semibold text-pm-ink-700">
-              Quantity
-            </span>
-            <div
-              className="flex items-stretch overflow-hidden rounded-md border border-pm-ink-200 bg-white"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  expandedQty.onDecrement();
-                }}
-                disabled={expandedQty.quantity <= 1}
-                aria-label="Decrease bundle quantity"
-                className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus size={14} strokeWidth={2} className="mx-auto" />
-              </button>
-              <input
-                type="number"
-                min={1}
-                value={expandedQty.quantity}
-                onChange={(e) => expandedQty.onInput(Number(e.target.value))}
+      {expandedQty && (() => {
+        // Hard cap from the admin-set `(max N)` on the modifier name.
+        // We disable the + button at the cap, clamp the typed input,
+        // and surface "N of M slots" so the user understands why.
+        const atMax =
+          expandedQty.maxQty != null && expandedQty.quantity >= expandedQty.maxQty;
+        return (
+          <div className="flex items-center justify-between gap-3 border-t border-pm-ink-200/60 bg-white/70 px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-semibold text-pm-ink-700">
+                Quantity
+              </span>
+              <div
+                className="flex items-stretch overflow-hidden rounded-md border border-pm-ink-200 bg-white"
                 onClick={(e) => e.stopPropagation()}
-                aria-label="Bundle quantity"
-                className="w-12 border-x border-pm-ink-200 text-center text-[13px] font-semibold text-pm-ink-900 outline-none"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  expandedQty.onIncrement();
-                }}
-                aria-label="Increase bundle quantity"
-                className="h-8 w-8 text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
               >
-                <Plus size={14} strokeWidth={2} className="mx-auto" />
-              </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    expandedQty.onDecrement();
+                  }}
+                  disabled={expandedQty.quantity <= 1}
+                  aria-label="Decrease bundle quantity"
+                  className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Minus size={14} strokeWidth={2} className="mx-auto" />
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={expandedQty.maxQty}
+                  value={expandedQty.quantity}
+                  onChange={(e) => expandedQty.onInput(Number(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Bundle quantity"
+                  className="w-12 border-x border-pm-ink-200 text-center text-[13px] font-semibold text-pm-ink-900 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    expandedQty.onIncrement();
+                  }}
+                  disabled={atMax}
+                  aria-label="Increase bundle quantity"
+                  className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus size={14} strokeWidth={2} className="mx-auto" />
+                </button>
+              </div>
+              {expandedQty.maxQty != null && (
+                <span
+                  className={`text-[11px] ${atMax ? 'font-semibold text-pm-warning' : 'text-pm-ink-500'}`}
+                  title={`This product has ${expandedQty.maxQty} slots`}
+                >
+                  of {expandedQty.maxQty}
+                </span>
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wide text-pm-ink-500">
+                Add-on
+              </div>
+              <div className="text-[14px] font-bold text-pm-navy-deep">
+                +{expandedQty.addOnLabel}
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-wide text-pm-ink-500">
-              Add-on
-            </div>
-            <div className="text-[14px] font-bold text-pm-navy-deep">
-              +{expandedQty.addOnLabel}
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </li>
   );
 }

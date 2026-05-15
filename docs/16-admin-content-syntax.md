@@ -692,6 +692,27 @@ You'll see a `product_list_with_images` modifier named
 Click **Save**. Hard-refresh the PDP within 120 seconds (Next.js cache
 TTL) and the new option lands as a radio row in the bundle picker.
 
+### Slot-count cap (`(max N)` in the modifier name)
+
+For products with a finite slot count (NAS with 4 SSD bays, server
+with 8 RAM slots, etc.) you can hard-cap the bundle qty stepper. Just
+append `(max N)` to the modifier's **Display name** in BC:
+
+| Display name in BC                       | What the user sees on PDP            |
+| ---------------------------------------- | ------------------------------------ |
+| `Bundle and get 3% off`                  | Heading: "Bundle and get 3% off". Qty stepper has no cap. |
+| `Bundle and get 3% off (max 4)`          | Heading: "Bundle and get 3% off". Qty stepper caps at 4, shows "of 4" next to the input, `+` button disables at 4. |
+| `Add SSDs [max:12]`                      | Same — `[max:12]` syntax also accepted. |
+| `Add RAM (max: 8)`                       | `(max: 8)` syntax also accepted. |
+
+The `(max N)` / `[max:N]` token is stripped from the heading at render
+time so the user-facing copy stays clean. Use whichever bracket /
+colon variant the WYSIWYG doesn't mangle.
+
+Different modifiers on the SAME product can have different caps (e.g.
+a server with `Add RAM (max 8)` AND `Add HDDs (max 4)` works fine —
+each modifier reads its own suffix).
+
 ### ⚠ Critical gotcha — linked products must be visible
 
 If the linked product has **Visibility: Hidden** in BC, the BC

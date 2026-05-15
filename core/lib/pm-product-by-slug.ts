@@ -117,10 +117,26 @@ export interface PmBundleOption {
 export interface PmBundleModifier {
   /** BC modifier entityId */
   modifierId: number;
-  /** Section heading shown in the PDP (e.g. "Bundle and get 3% off") */
+  /**
+   * Section heading shown in the PDP. Admin can append a slot-count cap
+   * with `(max N)` or `[max:N]` and the qty stepper hard-caps at N.
+   * The cap is stripped from the heading at render time.
+   *
+   * Examples:
+   *   "Bundle and get 3% off"           — no cap, unlimited qty
+   *   "Bundle and get 3% off (max 4)"   — qty stepper caps at 4
+   *   "Add SSDs [max:12]"               — alt syntax, same behavior
+   */
   displayName: string;
   /** When true, "None" can NOT be picked — user must select an option */
   isRequired: boolean;
+  /**
+   * Hard upper bound on the bundle qty stepper. Parsed from the BC
+   * display name `(max N)` / `[max:N]`. `undefined` means unlimited.
+   * Use this to model physical slot counts (e.g. "this NAS has 4 SSD
+   * slots, can't bundle more than 4 drives").
+   */
+  maxQty?: number;
   /** All admin-configured option values for this modifier */
   values: PmBundleOption[];
 }
@@ -344,6 +360,41 @@ const PmBundleLinkedProductsQuery = graphql(`
     }
   }
 `);
+
+/**
+ * Parse a slot-count cap out of a bundle modifier's display name.
+ * Admin syntax: any of
+ *
+ *   "Bundle and get 3% off (max 4)"
+ *   "Bundle and get 3% off (max: 4)"
+ *   "Bundle and get 3% off [max:4]"
+ *   "Bundle and get 3% off [max 4]"
+ *
+ * Returns `{ maxQty, cleanedName }` so the caller can strip the suffix
+ * from the rendered heading. `maxQty` is `undefined` when no cap is
+ * present; in that state the qty stepper has no upper bound.
+ */
+function parseMaxQtyFromDisplayName(rawName: string): {
+  maxQty: number | undefined;
+  cleanedName: string;
+} {
+  const m = rawName.match(/[(\[]\s*max\s*[:\s]\s*(\d+)\s*[)\]]/i);
+  if (!m) return { maxQty: undefined, cleanedName: rawName };
+  const n = Number(m[1]);
+  const valid = Number.isFinite(n) && n > 0;
+  // Strip ONLY the matched suffix, collapse the trailing whitespace it
+  // leaves behind. Don't touch any earlier text — admin might use the
+  // same parenthesis-pattern earlier in the name on purpose.
+  const cleanedName = rawName
+    .slice(0, m.index)
+    .concat(rawName.slice((m.index ?? 0) + m[0].length))
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return {
+    maxQty: valid ? n : undefined,
+    cleanedName: cleanedName || rawName,
+  };
+}
 
 /**
  * Pulls modifier-value price adjusters straight off BC v3 REST. The
@@ -757,10 +808,16 @@ export async function fetchPmProductBySlug(slug: string): Promise<PmProductDetai
           });
         }
         if (values.length > 0) {
+          const { maxQty, cleanedName } = parseMaxQtyFromDisplayName(
+            opt.displayName,
+          );
           bundleModifiers.push({
             modifierId: opt.entityId,
-            displayName: opt.displayName,
+            // Heading rendered on PDP — the `(max N)` admin suffix is
+            // stripped so it doesn't bleed into the user-facing text.
+            displayName: cleanedName,
             isRequired: opt.isRequired,
+            maxQty,
             values,
           });
         }
