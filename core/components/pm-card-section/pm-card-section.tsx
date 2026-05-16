@@ -141,6 +141,10 @@ export function PmCardSection({ section }: PmCardSectionProps) {
     cardAspect = '2 / 1',
     ribbonBg = '#8a2929',
     ribbonText = '#ffffff',
+    sectionLogos,
+    sectionLogoHeight = 36,
+    sectionLogoGap = '32px',
+    sectionLogoPosition = 'above-eyebrow',
     cards,
   } = section;
 
@@ -168,31 +172,89 @@ export function PmCardSection({ section }: PmCardSectionProps) {
       style={{ backgroundColor: bgColor, paddingTop: paddingY, paddingBottom: paddingY }}
     >
       <div className="mx-auto max-w-pm-container px-8">
-        {(eyebrow || title || subtitle) && (
-          <div className={`mb-9 ${align === 'center' ? 'text-center' : 'text-left'}`}>
-            {eyebrow && (
-              <div
-                className={`mb-2 text-[11px] font-bold uppercase tracking-[0.14em] ${eyebrowClass}`}
-              >
-                {eyebrow}
+        {(eyebrow || title || subtitle || (sectionLogos && sectionLogos.length > 0)) && (() => {
+          // Partner-brand logo row — native <img> (not next/image) because
+          // logos are often SVG or data URIs whose intrinsic size we don't
+          // know upfront; height is fixed, width auto, so any aspect ratio
+          // renders cleanly.
+          const hasLogos = sectionLogos != null && sectionLogos.length > 0;
+          const logoRow = hasLogos ? (
+            <div
+              className="flex flex-wrap items-center"
+              style={{ gap: sectionLogoGap }}
+            >
+              {sectionLogos!.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${src}-${i}`}
+                  src={src}
+                  alt=""
+                  style={{ height: `${sectionLogoHeight}px`, width: 'auto' }}
+                  className="block max-w-full object-contain"
+                />
+              ))}
+            </div>
+          ) : null;
+
+          // Header text — eyebrow + title + subtitle, in that order.
+          // Rendered as a fragment so the wrapping div (and its alignment
+          // class) is decided by the layout mode below.
+          const headerText = (
+            <>
+              {eyebrow && (
+                <div
+                  className={`mb-2 text-[11px] font-bold uppercase tracking-[0.14em] ${eyebrowClass}`}
+                >
+                  {eyebrow}
+                </div>
+              )}
+              {title && (
+                <h2
+                  className={`text-[28px] font-bold leading-[1.2] tracking-[-0.018em] md:text-[32px] ${headingClass}`}
+                >
+                  {title}
+                </h2>
+              )}
+              {subtitle && (
+                <p
+                  className={`mt-3 max-w-[640px] text-[15px] leading-[1.55] ${subtitleClass} ${align === 'center' ? 'mx-auto' : ''}`}
+                >
+                  {subtitle}
+                </p>
+              )}
+            </>
+          );
+
+          // `top-right`: logos float into the upper-right corner, header
+          // text sits on the left. Stacks vertically below md to keep
+          // logos readable on mobile (logos pop below header text since
+          // the eyebrow/title is the higher-priority anchor).
+          if (hasLogos && sectionLogoPosition === 'top-right') {
+            return (
+              <div className="mb-9 flex flex-col gap-6 md:flex-row md:items-start md:justify-between md:gap-10">
+                <div className={`flex-1 ${align === 'center' ? 'text-center' : 'text-left'}`}>
+                  {headerText}
+                </div>
+                <div className="shrink-0 md:pt-1">{logoRow}</div>
               </div>
-            )}
-            {title && (
-              <h2
-                className={`text-[28px] font-bold leading-[1.2] tracking-[-0.018em] md:text-[32px] ${headingClass}`}
-              >
-                {title}
-              </h2>
-            )}
-            {subtitle && (
-              <p
-                className={`mt-3 max-w-[640px] text-[15px] leading-[1.55] ${subtitleClass} ${align === 'center' ? 'mx-auto' : ''}`}
-              >
-                {subtitle}
-              </p>
-            )}
-          </div>
-        )}
+            );
+          }
+
+          // Default `above-eyebrow`: logos as a row sitting above the
+          // eyebrow text. Original layout, preserved as the default.
+          return (
+            <div className={`mb-9 ${align === 'center' ? 'text-center' : 'text-left'}`}>
+              {logoRow && (
+                <div
+                  className={`mb-5 flex ${align === 'center' ? 'justify-center' : 'justify-start'}`}
+                >
+                  {logoRow}
+                </div>
+              )}
+              {headerText}
+            </div>
+          );
+        })()}
 
         {/* Responsive grid — sm columns set in inline style above; md/lg
             climb up via a tiny inline <style> block that reads our CSS

@@ -79,6 +79,18 @@
  *   card_aspect:      CSS aspect-ratio for poster cards (default "2 / 1")
  *   ribbon_bg:        Ribbon background color (default #8a2929 maroon)
  *   ribbon_text:      Ribbon text color (default white)
+ *
+ *   section_logo_1..4: Optional partner/brand logo URLs. Layout depends
+ *                     on `section_logo_position` below. Up to 4 logos.
+ *   section_logo_height: Logo height in px (default 36). Width is
+ *                     auto-derived from the source aspect ratio.
+ *   section_logo_gap: Gap between logos (default 32px).
+ *   section_logo_position: above-eyebrow (default) — full-width logo row
+ *                     above the section header. top-right — logos align
+ *                     to the top-right of the section, with the header
+ *                     text (eyebrow/title/subtitle) on the left. The
+ *                     top-right layout collapses to a stacked column on
+ *                     small screens.
  */
 
 import {
@@ -177,6 +189,23 @@ export interface PmCardSectionConfig {
    * Text color for the ribbon label. Defaults to white.
    */
   ribbonText?: string;
+  /**
+   * Optional horizontal row of partner/brand logos rendered above the
+   * eyebrow. Each entry is an image URL. Used for "Why HPE + AMD" /
+   * "Powered by Intel + NVIDIA" style brand-pairing sections.
+   */
+  sectionLogos?: string[];
+  /** Logo row height in px (default 36). Width is auto from source aspect. */
+  sectionLogoHeight?: number;
+  /** Gap between logos in the row (default 32px). */
+  sectionLogoGap?: string;
+  /**
+   * Where the logo row sits relative to the section header. Default
+   * `above-eyebrow` keeps the existing layout. `top-right` puts logos
+   * in the upper-right corner of the section with the eyebrow/title/
+   * subtitle column on the left.
+   */
+  sectionLogoPosition?: 'above-eyebrow' | 'top-right';
   /** The cards themselves, in order */
   cards: PmCardConfig[];
 }
@@ -248,8 +277,28 @@ function collectCards(kv: Record<string, string>): PmCardConfig[] {
   return cards;
 }
 
+/**
+ * Collect contiguous section_logo_1..section_logo_4 entries. `section_logo`
+ * with no number suffix is treated as `section_logo_1` for shorthand.
+ * Stops at the first gap so admins can prune from the tail without
+ * renumbering the whole row.
+ */
+function collectSectionLogos(kv: Record<string, string>): string[] {
+  const logos: string[] = [];
+  const first = kv.section_logo || kv.section_logo_1;
+  if (!first) return logos;
+  logos.push(first);
+  for (let n = 2; n <= 4; n++) {
+    const v = kv[`section_logo_${n}`];
+    if (!v) break;
+    logos.push(v);
+  }
+  return logos;
+}
+
 function buildConfigFromBlock(block: string): PmCardSectionConfig {
   const kv = parseKeyValues(block);
+  const sectionLogos = collectSectionLogos(kv);
   return {
     eyebrow: kv.eyebrow || undefined,
     title: kv.title || undefined,
@@ -277,6 +326,13 @@ function buildConfigFromBlock(block: string): PmCardSectionConfig {
     cardAspect: kv.card_aspect || undefined,
     ribbonBg: kv.ribbon_bg || undefined,
     ribbonText: kv.ribbon_text || undefined,
+    sectionLogos: sectionLogos.length > 0 ? sectionLogos : undefined,
+    sectionLogoHeight: coerceNumber(kv.section_logo_height),
+    sectionLogoGap: kv.section_logo_gap || undefined,
+    sectionLogoPosition: coerceEnum(kv.section_logo_position, [
+      'above-eyebrow',
+      'top-right',
+    ]),
     cards: collectCards(kv),
   };
 }

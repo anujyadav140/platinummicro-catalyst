@@ -69,13 +69,77 @@ const PmBrandBannerCategoryQuery = graphql(`
   }
 `);
 
+/** A node in the result of `PmBrandBannerTreeQuery` — just the bits the
+ *  banner-folder walker needs. The query returns deeper trees than this,
+ *  but every walker below only reads `name`, `entityId`, and `children`. */
+interface TreeNode {
+  entityId: number;
+  name: string;
+  children?: ReadonlyArray<TreeNode> | null;
+}
+
+/** True if `leaf.name` matches the requested heading (full name OR the
+ *  curated shortHeading alias). */
+function leafMatchesHeading(leaf: TreeNode, wanted: string): boolean {
+  return (
+    leaf.name.toLowerCase() === wanted ||
+    shortHeadingFor(leaf.name).toLowerCase() === wanted
+  );
+}
+
+/** Find `[brand]` under `PM Page Banners > PM Brand Banners > [brand]`. */
+function findInPmBrandBanners(
+  tree: ReadonlyArray<TreeNode>,
+  wanted: string,
+): number | null {
+  for (const top of tree) {
+    if (top.name.toLowerCase() !== 'pm page banners') continue;
+    for (const mid of top.children ?? []) {
+      if (mid.name.toLowerCase() !== 'pm brand banners') continue;
+      for (const leaf of mid.children ?? []) {
+        if (leafMatchesHeading(leaf, wanted)) return leaf.entityId;
+      }
+    }
+  }
+  return null;
+}
+
+/** Legacy fallback: find `[brand]` under `BRAND > Mega Menu Brands > [brand]`. */
+function findInMegaMenuBrands(
+  tree: ReadonlyArray<TreeNode & { path?: string }>,
+  wanted: string,
+): number | null {
+  for (const top of tree) {
+    const topName = top.name.toLowerCase();
+    const isBrandTop =
+      topName === 'brand' ||
+      topName === 'brands' ||
+      (top.path?.toLowerCase().startsWith('/brand') ?? false);
+    if (!isBrandTop) continue;
+
+    for (const mid of top.children ?? []) {
+      const midName = mid.name.toLowerCase();
+      if (midName !== 'mega menu brands' && midName !== 'mega-menu-brands') continue;
+      for (const leaf of mid.children ?? []) {
+        if (leafMatchesHeading(leaf, wanted)) return leaf.entityId;
+      }
+    }
+  }
+  return null;
+}
+
 /**
- * Walk the BC category tree to find the "Mega Menu Brands" subcategory
- * whose name (or shortHeading) matches the requested heading. Returns
- * the matched subcategory's entityId, or null if no match exists.
+ * Resolve the BC category that holds the banner config for `heading`.
  *
- * Cached under the heading key (per-heading lookups don't bust each
- * other's results).
+ * Lookup order:
+ *   1. PM Page Banners > PM Brand Banners > {heading}  (preferred —
+ *      dedicated banner-config folder, mirrors PM Home Page Banners)
+ *   2. BRAND > Mega Menu Brands > {heading}            (legacy — used
+ *      when the dedicated folder hasn't been set up yet for a brand)
+ *
+ * Returns the matched subcategory's entityId, or null if neither lookup
+ * finds it. Cached per-heading so concurrent banner lookups for the
+ * same brand don't refetch the tree.
  */
 const cachedFindBrandCategoryId = unstable_cache(
   async (heading: string): Promise<number | null> => {
@@ -84,39 +148,18 @@ const cachedFindBrandCategoryId = unstable_cache(
         document: PmBrandBannerTreeQuery,
         fetchOptions: { next: { revalidate: 120 } },
       });
-      const tree = data?.site?.categoryTree ?? [];
+      const tree = (data?.site?.categoryTree ?? []) as TreeNode[];
       const wanted = heading.toLowerCase();
 
-      for (const top of tree) {
-        const topName = top.name.toLowerCase();
-        const isBrandTop =
-          topName === 'brand' ||
-          topName === 'brands' ||
-          top.path.toLowerCase().startsWith('/brand');
-        if (!isBrandTop) continue;
-
-        for (const mid of top.children ?? []) {
-          const midName = mid.name.toLowerCase();
-          if (midName !== 'mega menu brands' && midName !== 'mega-menu-brands') {
-            continue;
-          }
-          for (const leaf of mid.children ?? []) {
-            const leafName = leaf.name;
-            if (
-              leafName.toLowerCase() === wanted ||
-              shortHeadingFor(leafName).toLowerCase() === wanted
-            ) {
-              return leaf.entityId;
-            }
-          }
-        }
-      }
-      return null;
+      return (
+        findInPmBrandBanners(tree, wanted) ??
+        findInMegaMenuBrands(tree, wanted)
+      );
     } catch {
       return null;
     }
   },
-  ['pm-brand-banner-category-id'],
+  ['pm-brand-banner-category-id-v2'],
   { revalidate: 120, tags: ['pm-mega-menu'] },
 );
 
