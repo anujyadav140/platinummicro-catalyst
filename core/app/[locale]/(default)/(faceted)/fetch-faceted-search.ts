@@ -7,6 +7,7 @@ import { PaginationFragment } from '~/client/fragments/pagination';
 import { graphql, VariablesOf } from '~/client/graphql';
 import { CurrencyCode } from '~/components/header/fragment';
 import { ProductCardFragment } from '~/components/product-card/fragment';
+import { pickRelevantProducts } from '~/lib/pm-search';
 
 const GetProductSearchResultsQuery = graphql(
   `
@@ -178,6 +179,22 @@ interface ProductSearch {
   filters: SearchProductsFiltersInput;
 }
 
+// When a strict, multi-word query like "AS6704T v2 Lockerstor" is run, BC's
+// `searchProducts` OR-matches each token across name/description/SKU and
+// returns dozens of unrelated hits. The legacy storefront required ALL
+// tokens to be present — we replicate that here with `pickRelevantProducts`,
+// applied AFTER the BC fetch, only on the first page of a `searchTerm` query.
+//
+// To make narrowing meaningful we override BC's page limit on the first page
+// (no `before`/`after` cursor) to a generous pool, narrow, then return that
+// pool as a single "page" with synthesized pageInfo. This trades cursor
+// pagination for correctness on the search page — narrow queries usually
+// have <30 hits anyway. Category/brand pages (no `searchTerm`) keep BC's
+// native cursor pagination untouched.
+// BC's `searchProducts.products(first:)` is capped at 50 by the API; this
+// is the largest pool we can ask for in a single page.
+const SEARCH_NARROW_POOL_LIMIT = 50;
+
 const getProductSearchResults = cache(
   async (
     { limit = 9, after, before, sort, filters }: ProductSearch,
@@ -185,7 +202,14 @@ const getProductSearchResults = cache(
     customerAccessToken?: string,
   ) => {
     const filterArgs = { filters, sort };
-    const paginationArgs = before ? { last: limit, before } : { first: limit, after };
+    const searchTerm = filters.searchTerm ?? null;
+    // Only widen the BC fetch on the first page of a true `searchTerm`
+    // query — anything cursor-paginated stays on BC's native page size.
+    const isNarrowableFirstPage = Boolean(searchTerm) && !before && !after;
+    const effectiveLimit = isNarrowableFirstPage ? SEARCH_NARROW_POOL_LIMIT : limit;
+    const paginationArgs = before
+      ? { last: limit, before }
+      : { first: effectiveLimit, after };
 
     const response = await client.fetch({
       document: GetProductSearchResultsQuery,
@@ -198,9 +222,41 @@ const getProductSearchResults = cache(
 
     const searchResults = site.search.searchProducts;
 
-    const items = removeEdgesAndNodes(searchResults.products).map((product) => ({
+    const allItems = removeEdgesAndNodes(searchResults.products).map((product) => ({
       ...product,
     }));
+
+    let items = allItems;
+    let collectionInfo = searchResults.products.collectionInfo;
+    let pageInfo = searchResults.products.pageInfo;
+
+    if (isNarrowableFirstPage && searchTerm) {
+      const { products: narrowed, narrowed: didNarrow } = pickRelevantProducts(
+        allItems,
+        searchTerm,
+      );
+      if (didNarrow) {
+        items = narrowed;
+        // Total reflects the narrowed pool; pagination is collapsed (we
+        // returned every Tier 1 hit in this single page). The user can
+        // refine further with facets; multi-page cursor support for
+        // narrowed search results would require synthesizing our own
+        // cursor scheme, which isn't worth the complexity for queries
+        // that almost always reduce to <30 results.
+        collectionInfo = { ...collectionInfo, totalItems: narrowed.length };
+        pageInfo = {
+          ...pageInfo,
+          hasNextPage: false,
+          hasPreviousPage: false,
+          startCursor: null,
+          endCursor: null,
+        };
+      } else if (allItems.length > limit) {
+        // No narrowing — but we over-fetched. Trim to the requested page
+        // size so the UI doesn't render 250 cards on one screen.
+        items = allItems.slice(0, limit);
+      }
+    }
 
     return {
       facets: {
@@ -236,8 +292,8 @@ const getProductSearchResults = cache(
         }),
       },
       products: {
-        collectionInfo: searchResults.products.collectionInfo,
-        pageInfo: searchResults.products.pageInfo,
+        collectionInfo,
+        pageInfo,
         items,
       },
     };

@@ -48,6 +48,103 @@ export interface PmSearchResult {
   query: string;
 }
 
+// ── Strict-first relevance filter ─────────────────────────────────────────
+//
+// BC's `searchProducts(searchTerm)` tokenizes the query and OR-matches each
+// token across name/description/SKU/keywords. So a query like
+// "AS6704T v2 Lockerstor" balloons to 50+ hits — "Lockerstor" alone pulls
+// in every Asustor NAS, "v2" pulls in unrelated v2 models, etc. RELEVANCE
+// sort ranks them but doesn't tighten the set, matching the legacy Stencil
+// site's stricter behavior (where the same query returned exactly 1).
+//
+// We narrow the BC pool to a "Tier 1" set: products whose `sku + name`
+// contains EVERY whitespace-split token from the query. If Tier 1 is
+// non-empty we return only it (and pin exact/prefix SKU matches first);
+// otherwise we fall back to BC's full list so partial/typo queries still
+// surface something useful.
+//
+// Always fetched at a generous BC ceiling (PM_BC_FETCH_LIMIT) so the real
+// match isn't lost off the bottom of a short page.
+
+// BC's `searchProducts.products(first:)` is hard-capped at 50 by the API.
+const PM_BC_FETCH_LIMIT = 50;
+
+interface RelevanceCandidate {
+  sku?: string | null;
+  name: string;
+}
+
+function tokenizeQuery(q: string): string[] {
+  return q
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Strict-first relevance: narrow `products` to those whose SKU+name
+ * contains every token in `rawQuery`. Falls back to the unfiltered list
+ * when nothing meets the bar.
+ *
+ * Returns `narrowed: true` only when filtering actually changed the set —
+ * callers use that to decide whether to trust BC's totalItems or just
+ * report the filtered length.
+ */
+export function pickRelevantProducts<T extends RelevanceCandidate>(
+  products: T[],
+  rawQuery: string,
+): { products: T[]; narrowed: boolean } {
+  const trimmed = rawQuery.trim();
+  const tokens = tokenizeQuery(trimmed);
+  if (tokens.length === 0) return { products, narrowed: false };
+
+  const qLower = trimmed.toLowerCase();
+  // A SKU-shaped query is alphanumeric (plus -, _, /), no spaces, and at
+  // least 6 chars — enough to identify a real SKU like CCAS6704TV2 and
+  // distinguish it from common words like "computer". When we find an
+  // exact SKU match for this shape, we return ONLY that product, since
+  // the user clearly typed a SKU and wants that one thing.
+  const looksLikeSku =
+    /^[A-Za-z0-9_\-/]+$/.test(trimmed) && trimmed.length >= 6;
+
+  type Scored = {
+    product: T;
+    allMatch: boolean;
+    exactSku: boolean;
+    skuPrefix: boolean;
+  };
+  const scored: Scored[] = products.map((p) => {
+    const skuLower = (p.sku ?? '').toLowerCase();
+    const haystack = `${skuLower} ${p.name.toLowerCase()}`;
+    const allMatch = tokens.every((t) => haystack.includes(t));
+    const exactSku = skuLower.length > 0 && skuLower === qLower;
+    const skuPrefix =
+      skuLower.length > 0 && qLower.length >= 4 && skuLower.startsWith(qLower);
+    return { product: p, allMatch, exactSku, skuPrefix };
+  });
+
+  if (looksLikeSku) {
+    const exact = scored.find((s) => s.exactSku);
+    if (exact) return { products: [exact.product], narrowed: true };
+  }
+
+  const tier1 = scored.filter((s) => s.allMatch);
+  if (tier1.length > 0 && tier1.length < scored.length) {
+    // Stable sort: exact SKU first, then SKU prefix, then BC RELEVANCE order.
+    tier1.sort((a, b) => {
+      if (a.exactSku !== b.exactSku) return a.exactSku ? -1 : 1;
+      if (a.skuPrefix !== b.skuPrefix) return a.skuPrefix ? -1 : 1;
+      return 0;
+    });
+    return { products: tier1.map((s) => s.product), narrowed: true };
+  }
+
+  // Either no Tier 1 hits OR every result is already Tier 1 (e.g. a single
+  // broad token like "Asustor" — BC's count is then trustworthy).
+  return { products, narrowed: false };
+}
+
 const PmSearchQuery = graphql(`
   query PmSearchQuery($searchTerm: String!, $limit: Int!) {
     site {
@@ -98,22 +195,23 @@ function formatPrice(price?: { value: number; currencyCode: string } | null): st
   }).format(price.value);
 }
 
-// Memoized BC fetch — same (query,limit) pair within the cache window returns
-// instantly. Critical for typeahead responsiveness in dev where Next's
-// fetch-level `revalidate` doesn't always survive HMR.
+// Memoized BC fetch. We always fetch a generous pool (PM_BC_FETCH_LIMIT)
+// so the strict-relevance narrower can find the real match even when BC
+// RELEVANCE buries it under loose token hits. Caller-side `limit` is
+// applied AFTER narrowing.
 const cachedSearchFetch = unstable_cache(
-  async (searchTerm: string, limit: number): Promise<PmSearchResult> => {
+  async (searchTerm: string): Promise<PmSearchResult> => {
     const { data } = await client.fetch({
       document: PmSearchQuery,
-      variables: { searchTerm, limit },
+      variables: { searchTerm, limit: PM_BC_FETCH_LIMIT },
       fetchOptions: { next: { revalidate } },
     });
 
     const products = data?.site?.search?.searchProducts?.products;
-    const totalCount = products?.collectionInfo?.totalItems ?? 0;
+    const bcTotalCount = products?.collectionInfo?.totalItems ?? 0;
     const edges = products?.edges ?? [];
 
-    const hits: PmSearchHit[] = edges
+    const allHits: PmSearchHit[] = edges
       .map((edge) => edge?.node)
       .filter((n): n is NonNullable<typeof n> => n != null)
       .map((n) => ({
@@ -128,9 +226,12 @@ const cachedSearchFetch = unstable_cache(
         inStock: n.inventory?.isInStock ?? false,
       }));
 
+    const { products: hits, narrowed } = pickRelevantProducts(allHits, searchTerm);
+    const totalCount = narrowed ? hits.length : bcTotalCount;
+
     return { hits, totalCount, query: searchTerm };
   },
-  ['pm-search-typeahead'],
+  ['pm-search-typeahead-v2'],
   { revalidate, tags: ['pm-search'] },
 );
 
@@ -144,7 +245,8 @@ export async function searchPmProducts(
   }
 
   const safeLimit = Math.max(1, Math.min(limit, 50));
-  return cachedSearchFetch(query, safeLimit);
+  const result = await cachedSearchFetch(query);
+  return { ...result, hits: result.hits.slice(0, safeLimit) };
 }
 
 // ---------------------------------------------------------------------------
@@ -202,18 +304,18 @@ interface PmSearchRawResult {
 }
 
 const cachedSearchListingRaw = unstable_cache(
-  async (searchTerm: string, limit: number): Promise<PmSearchRawResult> => {
+  async (searchTerm: string): Promise<PmSearchRawResult> => {
     const { data } = await client.fetch({
       document: PmSearchListingQuery,
-      variables: { searchTerm, limit },
+      variables: { searchTerm, limit: PM_BC_FETCH_LIMIT },
       fetchOptions: { next: { revalidate } },
     });
 
     const searchProducts = data?.site?.search?.searchProducts?.products;
-    const totalCount = searchProducts?.collectionInfo?.totalItems ?? 0;
+    const bcTotalCount = searchProducts?.collectionInfo?.totalItems ?? 0;
     const edges = searchProducts?.edges ?? [];
 
-    const rawProducts: PmInternalProduct[] = edges
+    const allRaw: PmInternalProduct[] = edges
       .map((edge) => edge?.node)
       .filter((n): n is NonNullable<typeof n> => n != null)
       .map((n, index) =>
@@ -232,9 +334,12 @@ const cachedSearchListingRaw = unstable_cache(
         }),
       );
 
+    const { products: rawProducts, narrowed } = pickRelevantProducts(allRaw, searchTerm);
+    const totalCount = narrowed ? rawProducts.length : bcTotalCount;
+
     return { rawProducts, totalCount, query: searchTerm };
   },
-  ['pm-search-listing-raw'],
+  ['pm-search-listing-raw-v2'],
   { revalidate, tags: ['pm-search'] },
 );
 
@@ -425,7 +530,7 @@ export async function fetchPmSearchListing(
   }
 
   const [{ rawProducts, totalCount }, bestSellingIds] = await Promise.all([
-    cachedSearchListingRaw(trimmed, 50),
+    cachedSearchListingRaw(trimmed),
     fetchBestSellingProductIds(),
   ]);
 
