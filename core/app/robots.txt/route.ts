@@ -56,4 +56,10 @@ export const GET = async () => {
   });
 };
 
-export const dynamic = 'force-static';
+// PM-MODIFIED: was 'force-static'. Static generation runs at build time
+// and hammers BC's settings query alongside the rest of the site's
+// prerenders, hitting our store's 429 rate-limit ceiling. Serving
+// dynamically with a 1-hour revalidate keeps robots.txt fresh enough
+// (it rarely changes) while letting builds succeed.
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
