@@ -181,7 +181,7 @@ export function AddressListSection<A extends Address, F extends Field>({
       <div>
         {showNewAddressForm && (
           <div className="border-b border-[var(--address-list-section-border,hsl(var(--contrast-100)))] pb-6 pt-5">
-            <div className="w-[480px] space-y-4">
+            <div className="w-full max-w-[480px] space-y-4">
               <DynamicForm
                 action={(_args, _prevState, formData) => {
                   setShowNewAddressForm(false);
@@ -241,7 +241,7 @@ export function AddressListSection<A extends Address, F extends Field>({
                 key={address.id}
               >
                 {activeAddressIds.includes(address.id) ? (
-                  <div className="w-[480px] space-y-4">
+                  <div className="w-full max-w-[480px] space-y-4">
                     <DynamicForm
                       action={(_args, _prevState, formData) => {
                         setActiveAddressIds((prev) => prev.filter((id) => id !== address.id));
@@ -277,7 +277,7 @@ export function AddressListSection<A extends Address, F extends Field>({
                           : undefined
                       }
                     />
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap gap-1">
                       <Button
                         aria-label={`${editLabel}: ${address.firstName} ${address.lastName}`}
                         onClick={() => setActiveAddressIds((prev) => [...prev, address.id])}
@@ -349,7 +349,7 @@ function Title({ children }: { children: ReactNode }) {
   const { pending } = useFormStatus();
 
   return (
-    <h1 className="hidden font-[family-name:var(--address-list-section-title-font-family,var(--font-family-heading))] text-4xl font-medium leading-none tracking-tight text-[var(--address-list-section-title,hsl(var(--foreground)))] @2xl:block">
+    <h1 className="hidden font-[family-name:var(--address-list-section-title-font-family,var(--font-family-heading))] text-2xl font-medium leading-tight tracking-tight text-[var(--address-list-section-title,hsl(var(--foreground)))] sm:text-3xl @2xl:block @2xl:text-4xl">
       {children}
       {pending && (
         <span className="ml-2">
@@ -362,7 +362,7 @@ function Title({ children }: { children: ReactNode }) {
 
 function AddressPreview({ address, isDefault = false }: { address: Address; isDefault?: boolean }) {
   return (
-    <div className="flex gap-10 font-[family-name:var(--address-list-section-content-font-family,var(--font-family-body))]">
+    <div className="flex flex-wrap gap-4 sm:gap-10 font-[family-name:var(--address-list-section-content-font-family,var(--font-family-body))]">
       <div className="text-sm text-[var(--address-list-section-info,hsl(var(--contrast-500)))]">
         <p className="font-bold text-[var(--address-list-section-name,hsl(var(--foreground)))]">
           {address.firstName} {address.lastName}

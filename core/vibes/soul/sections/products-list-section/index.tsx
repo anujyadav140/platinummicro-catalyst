@@ -76,15 +76,15 @@ export function ProductsListSection({
 }: Props) {
   return (
     <div className="group/products-list-section @container">
-      <div className="mx-auto max-w-screen-2xl px-4 py-10 @xl:px-6 @xl:py-14 @4xl:px-8 @4xl:py-12">
+      <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 sm:py-10 @xl:py-14 @4xl:px-8 @4xl:py-12">
         <div>
           <Stream fallback={<BreadcrumbsSkeleton />} value={streamableBreadcrumbs}>
             {(breadcrumbs) =>
               breadcrumbs && breadcrumbs.length > 1 && <Breadcrumbs breadcrumbs={breadcrumbs} />
             }
           </Stream>
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-8 pt-6 text-foreground">
-            <h1 className="flex items-center gap-2 font-heading text-3xl font-medium leading-none @lg:text-4xl @2xl:text-5xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-6 pt-4 text-foreground sm:gap-4 sm:pb-8 sm:pt-6">
+            <h1 className="flex items-center gap-2 font-heading text-2xl font-medium leading-tight sm:text-3xl @lg:text-4xl @2xl:text-5xl">
               <Suspense
                 fallback={
                   <span className="inline-flex h-[1lh] w-[6ch] animate-pulse rounded-lg bg-contrast-100" />
@@ -146,7 +146,7 @@ export function ProductsListSection({
             </div>
           </div>
         </div>
-        <div className="flex items-stretch gap-8 @4xl:gap-10">
+        <div className="flex items-stretch gap-4 sm:gap-6 @3xl:gap-8 @4xl:gap-10">
           <aside className="hidden w-52 @3xl:block @4xl:w-60">
             <Stream value={streamableFiltersPanelTitle}>
               {(filtersPanelTitle) => <h2 className="sr-only">{filtersPanelTitle}</h2>}

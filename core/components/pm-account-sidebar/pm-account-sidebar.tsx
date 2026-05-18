@@ -78,7 +78,10 @@ export function PmAccountSidebar({ items = PRIMARY }: PmAccountSidebarProps) {
 
   return (
     <aside className="lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:self-start">
-      <nav aria-label="Account navigation" className="flex flex-col gap-1">
+      <nav
+        aria-label="Account navigation"
+        className="-mx-4 flex flex-row gap-1 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
+      >
         {itemsWithCounts.map((item) => {
           const active = isActive(item);
           const Icon = item.icon;
@@ -87,7 +90,7 @@ export function PmAccountSidebar({ items = PRIMARY }: PmAccountSidebarProps) {
               key={item.key}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`inline-flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors duration-pm-fast ease-pm-standard ${
+              className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-pm-fast ease-pm-standard lg:gap-3 lg:text-[14px] ${
                 active
                   ? 'bg-pm-navy-pale text-pm-navy-deep'
                   : 'text-pm-ink-700 hover:bg-pm-ink-100 hover:text-pm-ink-900'
@@ -98,7 +101,7 @@ export function PmAccountSidebar({ items = PRIMARY }: PmAccountSidebarProps) {
                 strokeWidth={1.5}
                 className={active ? 'text-pm-navy-mid' : 'text-pm-ink-500'}
               />
-              <span className="flex-1">{item.label}</span>
+              <span className="lg:flex-1">{item.label}</span>
               {item.badgeCount !== undefined && item.badgeCount > 0 && (
                 <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-pm-terracotta px-1.5 text-[10px] font-bold text-white">
                   {item.badgeCount}
@@ -109,10 +112,10 @@ export function PmAccountSidebar({ items = PRIMARY }: PmAccountSidebarProps) {
         })}
       </nav>
 
-      <form action={signOutAction} className="mt-6 border-t border-pm-ink-200 pt-4">
+      <form action={signOutAction} className="mt-4 border-t border-pm-ink-200 pt-4 lg:mt-6">
         <button
           type="submit"
-          className="inline-flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[14px] font-medium text-pm-ink-500 transition-colors hover:bg-pm-danger-bg hover:text-pm-danger"
+          className="inline-flex min-h-[44px] w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium text-pm-ink-500 transition-colors hover:bg-pm-danger-bg hover:text-pm-danger lg:text-[14px]"
         >
           <LogOut size={16} strokeWidth={1.5} />
           Sign out

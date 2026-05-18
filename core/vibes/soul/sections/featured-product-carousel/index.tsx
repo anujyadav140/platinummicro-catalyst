@@ -52,13 +52,13 @@ export function FeaturedProductCarousel({
 }: FeaturedProductCarouselProps) {
   return (
     <SectionLayout containerSize="2xl">
-      <div className="mb-6 flex w-full flex-row flex-wrap items-end justify-between gap-x-8 gap-y-6 @4xl:mb-8">
+      <div className="mb-4 flex w-full flex-row flex-wrap items-end justify-between gap-x-6 gap-y-4 sm:mb-6 sm:gap-x-8 sm:gap-y-6 @4xl:mb-8">
         <header className="font-[family-name:var(--featured-product-carousel-font-family,var(--font-family-body))]">
-          <h2 className="font-[family-name:var(--featured-product-carousel-title-font-family,var(--font-family-heading))] text-2xl leading-none text-[var(--featured-product-carousel-title,hsl(var(--foreground)))] @xl:text-3xl @4xl:text-4xl">
+          <h2 className="font-[family-name:var(--featured-product-carousel-title-font-family,var(--font-family-heading))] text-xl leading-tight text-[var(--featured-product-carousel-title,hsl(var(--foreground)))] sm:text-2xl @xl:text-3xl @4xl:text-4xl">
             {title}
           </h2>
           {description != null && description !== '' && (
-            <p className="mt-3 max-w-xl leading-relaxed text-[var(--featured-product-carousel-description,hsl(var(--contrast-500)))]">
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--featured-product-carousel-description,hsl(var(--contrast-500)))] sm:mt-3 sm:text-base">
               {description}
             </p>
           )}

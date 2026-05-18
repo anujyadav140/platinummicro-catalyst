@@ -46,11 +46,11 @@ export function FeaturedProductList({
     <StickySidebarLayout
       sidebar={
         <header className="font-[family-name:var(--featured-product-list-font-family,var(--font-family-body))]">
-          <h2 className="mb-3 font-[family-name:var(--featured-product-list-title-font-family,var(--font-family-heading))] text-4xl font-medium leading-none text-[var(--featured-product-list-title,hsl(var(--foreground)))] @4xl:text-5xl">
+          <h2 className="mb-3 font-[family-name:var(--featured-product-list-title-font-family,var(--font-family-heading))] text-2xl font-medium leading-tight text-[var(--featured-product-list-title,hsl(var(--foreground)))] sm:text-3xl @xl:text-4xl @4xl:text-5xl">
             {title}
           </h2>
           {description != null && description !== '' && (
-            <p className="mb-8 max-w-xl text-lg leading-normal text-[var(--featured-product-list-description,hsl(var(--contrast-500)))]">
+            <p className="mb-6 max-w-xl text-sm leading-normal text-[var(--featured-product-list-description,hsl(var(--contrast-500)))] sm:text-base @xl:mb-8 @xl:text-lg">
               {description}
             </p>
           )}

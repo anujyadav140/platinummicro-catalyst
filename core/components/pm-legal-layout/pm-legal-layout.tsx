@@ -45,21 +45,21 @@ export async function PmLegalLayout({
       <main className="bg-pm-paper">
         {/* Hero strip — navy-deep with the page title */}
         <section className="bg-pm-navy-deep">
-          <div className="mx-auto max-w-pm-container px-8 py-16 lg:py-20">
+          <div className="mx-auto max-w-pm-container px-4 py-10 sm:px-6 sm:py-12 md:px-8 md:py-16 lg:py-20">
             <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-pm-terracotta-light">
               {eyebrow}
             </div>
-            <h1 className="mt-3 text-[clamp(32px,3.4vw,44px)] font-bold leading-[1.1] tracking-[-0.02em] text-white">
+            <h1 className="mt-3 text-[clamp(26px,5.5vw,44px)] font-bold leading-[1.15] tracking-[-0.02em] text-white">
               {title}
             </h1>
             {meta && (
-              <p className="mt-4 text-[14px] text-white/60">{meta}</p>
+              <p className="mt-3 text-sm text-white/60 sm:mt-4">{meta}</p>
             )}
           </div>
         </section>
 
         {/* Content column — locked to our type scale */}
-        <article className="mx-auto max-w-[760px] px-8 py-16 text-[15px] leading-[1.6] text-pm-ink-700 [&_h2]:mt-12 [&_h2:first-child]:mt-0 [&_h2]:text-[28px] [&_h2]:font-bold [&_h2]:tracking-[-0.018em] [&_h2]:text-pm-ink-900 [&_h3]:mt-8 [&_h3]:text-[18px] [&_h3]:font-bold [&_h3]:text-pm-ink-900 [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-2 [&_ul_li]:flex [&_ul_li]:items-start [&_ul_li]:gap-2.5 [&_ul_li]:before:mt-[10px] [&_ul_li]:before:h-1 [&_ul_li]:before:w-1 [&_ul_li]:before:shrink-0 [&_ul_li]:before:rounded-full [&_ul_li]:before:bg-pm-terracotta [&_ul_li]:before:content-[''] [&_strong]:font-semibold [&_strong]:text-pm-ink-900 [&_a]:font-semibold [&_a]:text-pm-navy-mid [&_a]:underline-offset-2 hover:[&_a]:text-pm-navy-light hover:[&_a]:underline">
+        <article className="mx-auto max-w-[760px] px-4 py-10 text-[15px] leading-[1.6] text-pm-ink-700 sm:px-6 sm:py-12 md:px-8 md:py-16 [&_h2]:mt-10 sm:[&_h2]:mt-12 [&_h2:first-child]:mt-0 [&_h2]:text-[22px] sm:[&_h2]:text-[28px] [&_h2]:font-bold [&_h2]:tracking-[-0.018em] [&_h2]:text-pm-ink-900 [&_h3]:mt-6 sm:[&_h3]:mt-8 [&_h3]:text-[16px] sm:[&_h3]:text-[18px] [&_h3]:font-bold [&_h3]:text-pm-ink-900 [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-2 [&_ul_li]:flex [&_ul_li]:items-start [&_ul_li]:gap-2.5 [&_ul_li]:before:mt-[10px] [&_ul_li]:before:h-1 [&_ul_li]:before:w-1 [&_ul_li]:before:shrink-0 [&_ul_li]:before:rounded-full [&_ul_li]:before:bg-pm-terracotta [&_ul_li]:before:content-[''] [&_strong]:font-semibold [&_strong]:text-pm-ink-900 [&_a]:font-semibold [&_a]:text-pm-navy-mid [&_a]:underline-offset-2 hover:[&_a]:text-pm-navy-light hover:[&_a]:underline">
           {children}
         </article>
       </main>

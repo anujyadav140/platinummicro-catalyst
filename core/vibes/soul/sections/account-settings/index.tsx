@@ -63,21 +63,21 @@ export function AccountSettingsSection({
   return (
     <section className="w-full @container">
       <header className="mb-4 border-[var(--account-settings-section-border,hsl(var(--contrast-100)))] @2xl:min-h-[72px] @2xl:border-b">
-        <h1 className="hidden font-[family-name:var(--account-settings-section-title-font-family,var(--font-family-heading))] text-4xl font-medium leading-none tracking-tight text-[var(--account-settings-section-title,hsl(var(--foreground)))] @2xl:block">
+        <h1 className="hidden font-[family-name:var(--account-settings-section-title-font-family,var(--font-family-heading))] text-2xl font-medium leading-tight tracking-tight text-[var(--account-settings-section-title,hsl(var(--foreground)))] sm:text-3xl @2xl:block @2xl:text-4xl">
           {title}
         </h1>
       </header>
-      <div className="flex flex-col gap-y-24 @xl:flex-row">
+      <div className="flex flex-col gap-y-10 sm:gap-y-16 @xl:flex-row @xl:gap-y-24">
         <div className="my-4 flex w-full flex-col @xl:max-w-lg">
-          <div className="pb-12">
+          <div className="pb-8 sm:pb-12">
             <UpdateAccountForm
               account={account}
               action={updateAccountAction}
               submitLabel={updateAccountSubmitLabel}
             />
           </div>
-          <div className="border-t border-[var(--account-settings-section-border,hsl(var(--contrast-100)))] py-12">
-            <h1 className="mb-10 font-[family-name:var(--account-settings-section-font-family,var(--font-family-heading))] text-2xl font-medium leading-none text-[var(--account-settings-section-text,var(--foreground))] @xl:text-2xl">
+          <div className="border-t border-[var(--account-settings-section-border,hsl(var(--contrast-100)))] py-8 sm:py-12">
+            <h1 className="mb-6 font-[family-name:var(--account-settings-section-font-family,var(--font-family-heading))] text-xl font-medium leading-tight text-[var(--account-settings-section-text,var(--foreground))] sm:mb-10 sm:text-2xl @xl:text-2xl">
               {changePasswordTitle}
             </h1>
             <ChangePasswordForm
@@ -90,8 +90,8 @@ export function AccountSettingsSection({
             />
           </div>
           {newsletterSubscriptionEnabled && updateNewsletterSubscriptionAction && (
-            <div className="border-t border-[var(--account-settings-section-border,hsl(var(--contrast-100)))] pt-12">
-              <h1 className="mb-10 font-[family-name:var(--account-settings-section-font-family,var(--font-family-heading))] text-2xl font-medium leading-none text-[var(--account-settings-section-text,var(--foreground))] @xl:text-2xl">
+            <div className="border-t border-[var(--account-settings-section-border,hsl(var(--contrast-100)))] pt-8 sm:pt-12">
+              <h1 className="mb-6 font-[family-name:var(--account-settings-section-font-family,var(--font-family-heading))] text-xl font-medium leading-tight text-[var(--account-settings-section-text,var(--foreground))] sm:mb-10 sm:text-2xl @xl:text-2xl">
                 {newsletterSubscriptionTitle}
               </h1>
               <NewsletterSubscriptionForm
