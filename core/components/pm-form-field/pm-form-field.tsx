@@ -60,7 +60,7 @@ export function PmFormField({
         defaultValue={defaultValue}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={`rounded-md border bg-white px-4 py-3 text-[15px] text-pm-ink-900 outline-none transition-all placeholder:text-pm-ink-400 focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)] ${
+        className={`min-h-[44px] w-full rounded-md border bg-white px-4 py-3 text-base sm:text-[15px] text-pm-ink-900 outline-none transition-all placeholder:text-pm-ink-400 focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)] ${
           error
             ? 'border-pm-danger focus:border-pm-danger'
             : 'border-pm-ink-300 focus:border-pm-navy-light'

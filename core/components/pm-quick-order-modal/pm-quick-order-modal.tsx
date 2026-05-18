@@ -121,7 +121,7 @@ export function PmQuickOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-pm-navy-deepest/45 p-8"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-pm-navy-deepest/45 p-0 sm:items-center sm:p-8"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -130,15 +130,14 @@ export function PmQuickOrderModal({
       aria-labelledby="pm-quick-order-title"
     >
       <div
-        className="flex w-full max-w-[560px] flex-col gap-[18px] rounded-xl bg-white p-7 shadow-xl"
-        style={{ height: '560px' }}
+        className="flex h-[min(90vh,560px)] w-full max-w-full sm:max-w-[560px] flex-col gap-4 sm:gap-[18px] rounded-t-xl sm:rounded-xl bg-white p-4 sm:p-7 shadow-xl"
       >
         {/* HEAD */}
         <div className="flex shrink-0 items-start justify-between gap-4">
           <div>
             <h3
               id="pm-quick-order-title"
-              className="mb-1.5 text-[22px] font-bold tracking-[-0.01em] text-pm-ink-900"
+              className="mb-1.5 text-[20px] sm:text-[22px] font-bold tracking-[-0.01em] text-pm-ink-900"
             >
               Quick order
             </h3>
@@ -151,7 +150,7 @@ export function PmQuickOrderModal({
             type="button"
             onClick={handleClose}
             aria-label="Close quick order"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
+            className="flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
           >
             <X size={18} strokeWidth={1.5} />
           </button>
@@ -193,7 +192,7 @@ export function PmQuickOrderModal({
           style={{ scrollbarWidth: 'thin' }}
         >
           {/* Sticky column header */}
-          <div className="sticky top-0 z-[1] mb-1 grid grid-cols-[1fr_88px_36px] gap-2.5 border-b border-pm-ink-200 bg-white px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-pm-ink-500">
+          <div className="sticky top-0 z-[1] mb-1 grid grid-cols-[1fr_72px_44px] sm:grid-cols-[1fr_88px_36px] gap-2.5 border-b border-pm-ink-200 bg-white px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-pm-ink-500">
             <span>SKU</span>
             <span>Qty</span>
             <span />
@@ -202,27 +201,27 @@ export function PmQuickOrderModal({
           {rows.map((row, i) => (
             <div
               key={i}
-              className="grid grid-cols-[1fr_88px_36px] items-center gap-2.5"
+              className="grid grid-cols-[1fr_72px_44px] sm:grid-cols-[1fr_88px_36px] items-center gap-2.5"
             >
               <input
                 value={row.sku}
                 onChange={(e) => setRow(i, 'sku', e.target.value)}
                 placeholder="e.g. P58416-B21"
-                className="rounded-md border border-pm-ink-300 bg-white px-3 py-2.5 text-sm text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
+                className="min-h-[44px] rounded-md border border-pm-ink-300 bg-white px-3 py-2.5 text-base sm:text-sm text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
               />
               <input
                 type="number"
                 min={1}
                 value={row.qty}
                 onChange={(e) => setRow(i, 'qty', Number(e.target.value))}
-                className="rounded-md border border-pm-ink-300 bg-white px-3 py-2.5 text-center text-sm text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
+                className="min-h-[44px] rounded-md border border-pm-ink-300 bg-white px-2 py-2.5 text-center text-base sm:text-sm text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
               />
               <button
                 type="button"
                 onClick={() => removeRow(i)}
                 disabled={rows.length === 1}
                 aria-label="Remove row"
-                className="flex h-9 w-9 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:enabled:bg-pm-danger-bg hover:enabled:text-pm-danger disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:enabled:bg-pm-danger-bg hover:enabled:text-pm-danger disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <X size={16} strokeWidth={1.5} />
               </button>
@@ -242,7 +241,7 @@ export function PmQuickOrderModal({
         </div>
 
         {/* FOOT */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-pm-ink-200 pt-4">
+        <div className="flex shrink-0 flex-col items-stretch gap-3 border-t border-pm-ink-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-[13px] text-pm-ink-500">
             {filled.length} SKU{filled.length === 1 ? '' : 's'} ·{' '}
             {totalUnits} unit{totalUnits === 1 ? '' : 's'} ready to add
@@ -252,7 +251,7 @@ export function PmQuickOrderModal({
               type="button"
               onClick={handleClose}
               disabled={submitting}
-              className="rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[48px] flex-1 sm:flex-none rounded-md bg-pm-ink-100 px-4 py-3.5 text-[15px] font-semibold text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -260,7 +259,7 @@ export function PmQuickOrderModal({
               type="button"
               disabled={filled.length === 0 || submitting}
               onClick={handleSubmit}
-              className="inline-flex min-w-[148px] items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:enabled:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:bg-pm-ink-300"
+              className="inline-flex min-h-[48px] flex-1 sm:flex-none min-w-0 sm:min-w-[148px] items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:enabled:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:bg-pm-ink-300"
             >
               {submitting ? (
                 <>

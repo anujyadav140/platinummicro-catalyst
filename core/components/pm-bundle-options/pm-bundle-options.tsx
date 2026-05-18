@@ -287,7 +287,7 @@ function BundleOptionRow({
         type="button"
         onClick={onSelect}
         aria-pressed={checked}
-        className="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-pm-ink-100/40"
+        className="flex min-h-[44px] w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-pm-ink-100/40"
       >
         <span
           aria-hidden
@@ -350,8 +350,8 @@ function BundleOptionRow({
         const atMax =
           expandedQty.maxQty != null && expandedQty.quantity >= expandedQty.maxQty;
         return (
-          <div className="flex items-center justify-between gap-3 border-t border-pm-ink-200/60 bg-white/70 px-3 py-2.5">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-pm-ink-200/60 bg-white/70 px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-[12px] font-semibold text-pm-ink-700">
                 Quantity
               </span>
@@ -367,7 +367,7 @@ function BundleOptionRow({
                   }}
                   disabled={expandedQty.quantity <= 1}
                   aria-label="Decrease bundle quantity"
-                  className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="h-11 w-11 sm:h-8 sm:w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Minus size={14} strokeWidth={2} className="mx-auto" />
                 </button>
@@ -379,7 +379,7 @@ function BundleOptionRow({
                   onChange={(e) => expandedQty.onInput(Number(e.target.value))}
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Bundle quantity"
-                  className="w-12 border-x border-pm-ink-200 text-center text-[13px] font-semibold text-pm-ink-900 outline-none"
+                  className="w-14 sm:w-12 border-x border-pm-ink-200 text-center text-[14px] sm:text-[13px] font-semibold text-pm-ink-900 outline-none"
                 />
                 <button
                   type="button"
@@ -389,7 +389,7 @@ function BundleOptionRow({
                   }}
                   disabled={atMax}
                   aria-label="Increase bundle quantity"
-                  className="h-8 w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="h-11 w-11 sm:h-8 sm:w-8 text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Plus size={14} strokeWidth={2} className="mx-auto" />
                 </button>

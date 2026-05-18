@@ -54,7 +54,7 @@ export function PmProductGallery({
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-square w-full max-w-[405px] items-center justify-center rounded-md border border-pm-ink-200 bg-pm-ink-100">
+      <div className="flex aspect-square w-full max-w-full sm:max-w-[405px] items-center justify-center rounded-md border border-pm-ink-200 bg-pm-ink-100">
         <span className="rounded-sm border border-dashed border-pm-ink-300 bg-white px-3 py-2 text-[12px] text-pm-ink-400">
           {sku}
         </span>
@@ -83,11 +83,11 @@ export function PmProductGallery({
 
   return (
     <div
-      className={`flex w-full gap-3 ${hasThumbs ? 'max-w-[480px]' : 'max-w-[405px]'}`}
+      className={`flex w-full flex-col-reverse gap-3 sm:flex-row ${hasThumbs ? 'max-w-full sm:max-w-[480px]' : 'max-w-full sm:max-w-[405px]'}`}
     >
-      {/* Vertical thumbnail column — only when 2+ images */}
+      {/* Thumbnail strip — horizontal scroll on mobile, vertical column on sm+ */}
       {hasThumbs && (
-        <div className="flex shrink-0 flex-col gap-2">
+        <div className="-mx-1 flex shrink-0 flex-row gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-col sm:overflow-visible sm:px-0 sm:pb-0">
           {images.slice(0, 6).map((image, i) => {
             const isActive = i === activeIndex;
             return (
@@ -98,13 +98,13 @@ export function PmProductGallery({
                 onClick={() => setActiveIndex(i)}
                 aria-label={`Show image ${i + 1}`}
                 aria-pressed={isActive}
-                className={`flex h-[62px] w-[62px] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white transition-colors duration-[120ms] ease-pm-standard ${
+                className={`flex h-[56px] w-[56px] sm:h-[62px] sm:w-[62px] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white transition-colors duration-[120ms] ease-pm-standard ${
                   isActive
                     ? 'border-pm-terracotta'
                     : 'border-pm-ink-200 hover:border-pm-ink-400'
                 }`}
               >
-                {/* Thumbnail — fixed 62px tile, urlTemplate gets size param
+                {/* Thumbnail — fixed tile, urlTemplate gets size param
                     via the Catalyst <Image> wrapper. */}
                 <Image
                   src={image.url}
@@ -126,7 +126,7 @@ export function PmProductGallery({
         onMouseEnter={() => setZoomActive(true)}
         onMouseLeave={() => setZoomActive(false)}
         onMouseMove={handleMouseMove}
-        className="relative flex aspect-square w-full flex-1 items-center justify-center overflow-hidden rounded-md border border-pm-ink-200 bg-white"
+        className="relative flex aspect-square w-full max-w-full flex-1 items-center justify-center overflow-hidden rounded-md border border-pm-ink-200 bg-white"
         style={{ cursor: zoomActive ? 'zoom-out' : 'zoom-in' }}
       >
         {/* Main image — large width=800 gives the loader headroom for the
@@ -137,7 +137,7 @@ export function PmProductGallery({
           alt={active.altText || productName}
           width={800}
           height={800}
-          sizes="(min-width: 768px) 405px, 90vw"
+          sizes="(min-width: 768px) 405px, 100vw"
           priority
           className="h-full w-full object-contain p-5 transition-transform duration-150 ease-out"
           style={{

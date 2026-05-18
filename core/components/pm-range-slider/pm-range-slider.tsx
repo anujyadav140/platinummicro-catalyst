@@ -68,8 +68,8 @@ export function PmRangeSlider({
         <span>{formatLabel(high)}</span>
       </div>
 
-      {/* Track + thumbs */}
-      <div className="relative h-6">
+      {/* Track + thumbs — taller touch area on mobile (h-11 = 44px tap target) */}
+      <div className="relative h-11 sm:h-6">
         {/* Inactive track */}
         <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-pm-ink-200" />
         {/* Active fill segment */}
@@ -87,7 +87,7 @@ export function PmRangeSlider({
           value={low}
           onChange={(e) => setLow(Number(e.target.value))}
           aria-label={`Minimum ${ariaPrefix}`}
-          className="pm-range-input absolute inset-0 h-6 w-full appearance-none bg-transparent"
+          className="pm-range-input absolute inset-0 h-11 sm:h-6 w-full appearance-none bg-transparent"
         />
         {/* High thumb */}
         <input
@@ -98,7 +98,7 @@ export function PmRangeSlider({
           value={high}
           onChange={(e) => setHigh(Number(e.target.value))}
           aria-label={`Maximum ${ariaPrefix}`}
-          className="pm-range-input absolute inset-0 h-6 w-full appearance-none bg-transparent"
+          className="pm-range-input absolute inset-0 h-11 sm:h-6 w-full appearance-none bg-transparent"
         />
       </div>
 

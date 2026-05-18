@@ -115,7 +115,7 @@ export function PmCouponInput() {
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-2 flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="text"
             value={code}
@@ -131,12 +131,12 @@ export function PmCouponInput() {
             spellCheck={false}
             autoComplete="off"
             aria-label="Coupon code"
-            className="min-w-0 flex-1 rounded-md border border-pm-ink-200 bg-white px-3 py-2 font-mono text-[13px] uppercase text-pm-ink-900 outline-none placeholder:font-sans placeholder:normal-case placeholder:text-pm-ink-400 focus:border-pm-navy-deep"
+            className="w-full min-w-0 flex-1 rounded-md border border-pm-ink-200 bg-white px-3 py-2.5 sm:py-2 font-mono text-sm uppercase text-pm-ink-900 outline-none placeholder:font-sans placeholder:normal-case placeholder:text-pm-ink-400 focus:border-pm-navy-deep min-h-[44px]"
           />
           <button
             type="submit"
             disabled={isLoading || code.trim().length === 0}
-            className="inline-flex items-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-1.5 rounded-md bg-pm-terracotta px-4 py-2.5 sm:py-2 text-sm font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <>

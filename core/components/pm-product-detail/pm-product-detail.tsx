@@ -357,10 +357,10 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           the product name. Each ancestor is clickable when we could resolve
           a category slug; otherwise it falls back to plain text so a stale
           BC path can't strand the user on a 404. */}
-      <div className="w-full px-6 pt-4">
+      <div className="w-full px-4 pt-4 sm:px-6 md:px-8">
         <nav
           aria-label="Breadcrumb"
-          className="flex items-center gap-2 text-[14px] text-pm-ink-500"
+          className="flex flex-wrap items-center gap-2 text-[13px] sm:text-[14px] text-pm-ink-500"
         >
           <Link
             href="/dev/preview"
@@ -408,8 +408,8 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                     - Details column (title, brand link, SKU, MPN, price,
                       UPC, Shipping & Returns button)
                     - Buy-box card (Availability, Qty, Add to Cart) */}
-      <section className="w-full px-6 pb-14 pt-6">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,488px)_minmax(0,1fr)] lg:gap-12">
+      <section className="w-full px-4 pb-14 pt-6 sm:px-6 md:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,488px)_minmax(0,1fr)] lg:gap-12">
           <div className="flex justify-start">
             <PmProductGallery
               images={product.galleryImages}
@@ -430,7 +430,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:gap-6 lg:max-w-[1080px]">
             {/* DETAILS column */}
             <div className="flex flex-col">
-              <h1 className="text-[24px] font-bold leading-[1.25] tracking-[-0.012em] text-pm-ink-900">
+              <h1 className="text-[20px] sm:text-[22px] md:text-[24px] font-bold leading-[1.25] tracking-[-0.012em] text-pm-ink-900">
                 {product.name}
               </h1>
 
@@ -470,7 +470,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
               <div className="mt-5 border-t border-pm-ink-200 pt-5">
                 {product.priceLabel ? (
                   <>
-                    <div className="text-[32px] font-bold leading-none text-pm-ink-900">
+                    <div className="text-[28px] sm:text-[30px] md:text-[32px] font-bold leading-none text-pm-ink-900">
                       {previewTotalLabel}
                     </div>
                     {bundleAddOnPerBase > 0 && (
@@ -499,7 +499,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
               {/* Shipping and Returns — outline button */}
               <Link
                 href="/dev/preview/shipping-returns"
-                className="mt-6 inline-flex items-center gap-2 self-start rounded-md border border-pm-ink-300 bg-white px-5 py-2.5 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100"
+                className="mt-6 inline-flex min-h-[44px] items-center gap-2 self-start rounded-md border border-pm-ink-300 bg-white px-5 py-2.5 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100"
               >
                 <Truck size={15} strokeWidth={2} />
                 Shipping and Returns
@@ -601,7 +601,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                   disabled={qty <= 1}
                   aria-label="Decrease quantity"
-                  className="h-10 w-9 bg-white text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="h-11 w-11 sm:h-10 sm:w-9 bg-white text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   −
                 </button>
@@ -618,13 +618,13 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                     setQty(next);
                   }}
                   aria-label="Quantity"
-                  className="w-12 border-x border-pm-ink-200 text-center text-[14px] text-pm-ink-900 outline-none"
+                  className="w-14 sm:w-12 border-x border-pm-ink-200 text-center text-[14px] text-pm-ink-900 outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setQty((q) => q + 1)}
                   aria-label="Increase quantity"
-                  className="h-10 w-9 bg-white text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
+                  className="h-11 w-11 sm:h-10 sm:w-9 bg-white text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
                 >
                   +
                 </button>
@@ -634,7 +634,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+                  className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[15px] sm:text-[14px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
                 >
                   <ShoppingCart size={15} strokeWidth={2} />
                   Add to Cart
@@ -664,8 +664,8 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                 title="Quote requests — coming with B2B Ninja"
                 className={
                   product.inStock
-                    ? 'mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-4 py-2.5 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100'
-                    : 'mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light'
+                    ? 'mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-4 py-2.5 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100'
+                    : 'mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[15px] sm:text-[14px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light'
                 }
               >
                 <FileText
@@ -689,15 +689,15 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
         id="pm-product-description"
         className="scroll-mt-24 border-t border-pm-ink-200 bg-pm-paper"
       >
-        <div className="w-full px-6 py-14">
-          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-16">
+        <div className="w-full px-4 py-10 sm:px-6 sm:py-12 md:px-8 md:py-14">
+          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-16">
             {/* LEFT — Description (wider) */}
             <div>
-              <h2 className="text-[22px] font-bold tracking-tight text-pm-ink-900">
+              <h2 className="text-[20px] sm:text-[22px] font-bold tracking-tight text-pm-ink-900">
                 Description
               </h2>
               {product.shortDescription ? (
-                <div className="mt-5 space-y-4 text-[15px] leading-[1.7] text-pm-ink-700">
+                <div className="mt-5 space-y-4 text-sm sm:text-[15px] leading-[1.7] text-pm-ink-700">
                   {product.shortDescription.split(/\n{2,}/).map((para, i) => (
                     <p key={i}>{para.trim()}</p>
                   ))}
@@ -736,7 +736,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
             {/* RIGHT — Specifications (narrower, single-column tabular) */}
             <div>
               <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-[22px] font-bold tracking-tight text-pm-ink-900">
+                <h2 className="text-[20px] sm:text-[22px] font-bold tracking-tight text-pm-ink-900">
                   Specifications
                 </h2>
                 {visibleSpecs.length > 0 && (
@@ -779,7 +779,7 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
                       type="button"
                       onClick={() => setSpecsExpanded((v) => !v)}
                       aria-expanded={specsExpanded}
-                      className="mt-3 inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1.5 text-[13px] font-semibold text-pm-navy-mid transition-colors hover:text-pm-navy-deep"
+                      className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 self-start rounded-md px-2 py-1.5 text-[13px] font-semibold text-pm-navy-mid transition-colors hover:text-pm-navy-deep"
                     >
                       <ChevronDown
                         size={14}
@@ -814,8 +814,8 @@ export function PmProductDetail({ product }: PmProductDetailProps) {
           Specifications block above. */}
       {boxContents.length > 0 && (
         <section className="border-t border-pm-ink-200 bg-white">
-          <div className="w-full px-6 py-12">
-            <h2 className="text-[22px] font-bold tracking-tight text-pm-ink-900">
+          <div className="w-full px-4 py-10 sm:px-6 sm:py-12 md:px-8">
+            <h2 className="text-[20px] sm:text-[22px] font-bold tracking-tight text-pm-ink-900">
               What&apos;s in the box
             </h2>
             <ul className="mt-6 grid max-w-[780px] gap-2.5 text-[14px] leading-[1.55] text-pm-ink-700 sm:grid-cols-2">

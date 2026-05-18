@@ -97,10 +97,14 @@ export function PmAddToListButton({
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     // Align the popover's right edge with the trigger's right edge so
-    // it doesn't run off the viewport in narrow columns.
+    // it doesn't run off the viewport in narrow columns. On very narrow
+    // viewports (phones), shrink the popover to viewport - 16px gutter
+    // so it always fits.
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : POPOVER_WIDTH;
+    const width = Math.min(POPOVER_WIDTH, viewportWidth - 16);
     const top = rect.bottom + 8; // 8px gap (mt-2 equivalent)
-    const left = Math.max(8, rect.right - POPOVER_WIDTH);
-    setPopoverPos({ top, left, width: POPOVER_WIDTH });
+    const left = Math.max(8, rect.right - width);
+    setPopoverPos({ top, left, width });
   };
 
   useLayoutEffect(() => {
@@ -208,7 +212,7 @@ export function PmAddToListButton({
                 <button
                   type="button"
                   onClick={() => handleAdd(list.id)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-pm-ink-100"
+                  className="flex min-h-[44px] w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-pm-ink-100"
                 >
                   <span className="min-w-0 flex-1 truncate">
                     <span className="text-[13px] font-semibold text-pm-ink-900">
@@ -250,7 +254,7 @@ export function PmAddToListButton({
               autoFocus
               maxLength={64}
               placeholder="List name (e.g. Server build)"
-              className="rounded-md border border-pm-ink-300 bg-white px-3 py-2 text-[13px] text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
+              className="min-h-[44px] rounded-md border border-pm-ink-300 bg-white px-3 py-2 text-base sm:text-[13px] text-pm-ink-900 outline-none transition-all focus:border-pm-navy-light focus:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
             />
             <div className="flex items-center justify-end gap-2">
               <button
@@ -259,14 +263,14 @@ export function PmAddToListButton({
                   setCreating(false);
                   setNewName('');
                 }}
-                className="rounded-md px-3 py-1.5 text-[12px] font-semibold text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
+                className="min-h-[40px] rounded-md px-3 py-1.5 text-[13px] sm:text-[12px] font-semibold text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!newName.trim()}
-                className="inline-flex items-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-1.5 text-[13px] sm:text-[12px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={12} strokeWidth={2.5} />
                 Create &amp; add

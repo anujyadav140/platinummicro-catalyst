@@ -69,8 +69,8 @@ export function PmQuoteDrawer() {
         }`}
       >
         {/* HEAD */}
-        <div className="flex shrink-0 items-center justify-between border-b border-pm-ink-200 px-6 py-[22px]">
-          <div className="flex items-baseline gap-2.5">
+        <div className="flex shrink-0 items-center justify-between border-b border-pm-ink-200 px-4 py-4 sm:px-6 sm:py-[22px]">
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h3 className="text-lg font-bold text-pm-ink-900">Your cart</h3>
             {lines.length > 0 && (
               <span className="text-[13px] text-pm-ink-500">
@@ -83,14 +83,14 @@ export function PmQuoteDrawer() {
             type="button"
             onClick={close}
             aria-label="Close cart"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
+            className="flex h-11 w-11 sm:h-8 sm:w-8 items-center justify-center rounded-md text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
           >
             <X size={18} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {lines.length === 0 ? (
             <PmDrawerEmpty onClose={close} />
           ) : (
@@ -98,7 +98,7 @@ export function PmQuoteDrawer() {
               {lines.map((line) => (
                 <li
                   key={line.sku}
-                  className="grid grid-cols-[56px_1fr_auto] items-center gap-3 border-b border-pm-ink-200 py-3.5 last:border-b-0"
+                  className="grid grid-cols-[56px_1fr] sm:grid-cols-[56px_1fr_auto] items-center gap-x-3 gap-y-2 border-b border-pm-ink-200 py-3.5 last:border-b-0"
                 >
                   {/* Thumbnail */}
                   <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
@@ -137,14 +137,14 @@ export function PmQuoteDrawer() {
                   </div>
 
                   {/* Qty + remove */}
-                  <div className="flex items-center gap-2">
+                  <div className="col-span-2 flex items-center justify-between gap-2 sm:col-span-1 sm:justify-end">
                     <div className="flex items-stretch overflow-hidden rounded-md border border-pm-ink-200">
                       <button
                         type="button"
                         onClick={() => setQty(line.sku, line.qty - 1)}
                         disabled={line.qty <= 1}
                         aria-label="Decrease quantity"
-                        className="h-7 w-7 bg-white text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="h-11 w-11 sm:h-7 sm:w-7 bg-white text-pm-ink-700 transition-colors hover:enabled:bg-pm-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         −
                       </button>
@@ -154,13 +154,13 @@ export function PmQuoteDrawer() {
                         value={line.qty}
                         onChange={(e) => setQty(line.sku, Number(e.target.value))}
                         aria-label="Quantity"
-                        className="w-9 border-x border-pm-ink-200 text-center text-xs text-pm-ink-900 outline-none"
+                        className="w-12 sm:w-9 border-x border-pm-ink-200 text-center text-sm sm:text-xs text-pm-ink-900 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => setQty(line.sku, line.qty + 1)}
                         aria-label="Increase quantity"
-                        className="h-7 w-7 bg-white text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
+                        className="h-11 w-11 sm:h-7 sm:w-7 bg-white text-pm-ink-700 transition-colors hover:bg-pm-ink-100"
                       >
                         +
                       </button>
@@ -169,7 +169,7 @@ export function PmQuoteDrawer() {
                       type="button"
                       onClick={() => removeLine(line.sku)}
                       aria-label={`Remove ${line.sku}`}
-                      className="rounded-md p-1.5 text-pm-ink-400 transition-colors hover:bg-pm-danger-bg hover:text-pm-danger"
+                      className="flex h-11 w-11 sm:h-auto sm:w-auto items-center justify-center rounded-md p-1.5 text-pm-ink-400 transition-colors hover:bg-pm-danger-bg hover:text-pm-danger"
                     >
                       <Trash2 size={14} strokeWidth={1.5} />
                     </button>
@@ -184,7 +184,7 @@ export function PmQuoteDrawer() {
             cart page; this is just "you added it, here's a peek, want to
             review?". */}
         {lines.length > 0 && (
-          <div className="flex shrink-0 flex-col gap-2 border-t border-pm-ink-200 bg-pm-tan-pale px-6 py-5">
+          <div className="flex shrink-0 flex-col gap-2 border-t border-pm-ink-200 bg-pm-tan-pale px-4 py-4 sm:px-6 sm:py-5">
             <p className="text-[12px] leading-[1.45] text-pm-ink-500">
               Shipping, tax, and coupon codes apply at checkout.
             </p>
@@ -194,14 +194,14 @@ export function PmQuoteDrawer() {
                 type="button"
                 onClick={clear}
                 aria-label="Clear cart"
-                className="rounded-md bg-pm-ink-100 px-4 py-3 text-[14px] font-semibold text-pm-ink-700 transition-colors hover:bg-pm-ink-200"
+                className="min-h-[48px] rounded-md bg-pm-ink-100 px-4 py-3 text-[14px] font-semibold text-pm-ink-700 transition-colors hover:bg-pm-ink-200"
               >
                 Clear
               </button>
               <Link
                 href={CART_HREF}
                 onClick={close}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-md bg-pm-terracotta px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
               >
                 View cart
                 <ArrowRight size={15} strokeWidth={2.5} />
