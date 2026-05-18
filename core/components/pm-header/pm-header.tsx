@@ -24,8 +24,10 @@ import {
   Box,
   ChevronDown,
   LogOut,
+  Menu,
   ShoppingCart,
   User,
+  X,
 } from 'lucide-react';
 import { Image } from '~/components/image';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
@@ -76,6 +78,29 @@ export function PmHeader({
   const [openKey, setOpenKey] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mobile slide-in drawer state — only relevant <md where the nav rail
+  // is hidden in favor of a hamburger-triggered drawer. Desktop hover
+  // mega-menu (above) is entirely independent of this.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Body scroll lock + escape-to-close, ONLY when the drawer is open.
+  // Cleanly restores scroll on close/unmount so this can't strand the
+  // page in a locked state. Desktop never reaches this branch (drawer
+  // can't be opened — the hamburger button is `md:hidden`).
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileNavOpen(false);
+    };
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [mobileNavOpen]);
 
   // Schedule an open after a short delay (lets users skim past items)
   const scheduleOpen = (key: string) => {
@@ -159,6 +184,21 @@ export function PmHeader({
           className="mx-auto flex max-w-pm-container flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-6 md:px-8 md:py-0"
           style={{ minHeight: 'var(--pm-header-top-h)' }}
         >
+          {/* Hamburger — mobile only. Toggles the slide-in nav drawer
+              defined further down. Hidden from md+, where the nav rail
+              and mega-menu take over. order-0 so it sits to the LEFT of
+              the logo on the wrapped mobile row. */}
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={mobileNavOpen}
+            aria-controls="pm-mobile-nav"
+            className="order-0 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-pm-ink-900 transition-colors hover:bg-pm-ink-100 md:hidden"
+          >
+            <Menu size={22} strokeWidth={1.75} />
+          </button>
+
           {/* Logo */}
           <Link
             href={homeHref}
@@ -222,8 +262,11 @@ export function PmHeader({
 
       {/* ============================ NAV ROW ============================ */}
       {/* (PmHeaderAccountControl is defined at the bottom of this file —
-          handles the signed-out "Account" link and the signed-in dropdown.) */}
-      <div className="relative bg-pm-navy-deep border-t border-white/5">
+          handles the signed-out "Account" link and the signed-in dropdown.)
+          Hidden on mobile (<md) — the hamburger-driven drawer below takes
+          over there. The desktop hover mega-menu lives inside this wrapper
+          and is unaffected. */}
+      <div className="relative hidden bg-pm-navy-deep border-t border-white/5 md:block">
         <nav
           aria-label="Primary"
           className="mx-auto flex max-w-pm-container items-center justify-start gap-1 overflow-x-auto px-4 sm:px-6 md:justify-center md:overflow-x-visible md:px-8"
@@ -442,6 +485,74 @@ export function PmHeader({
             )}
           </div>
         )}
+      </div>
+
+      {/* ====================== MOBILE NAV DRAWER ====================== */}
+      {/* Slide-in drawer for <md viewports. Mirrors the same category list
+          the desktop nav rail renders, so it stays in sync without
+          duplicating data. Items are plain <Link>s — tapping one closes
+          the drawer and lets Next.js handle the navigation. We don't
+          recreate the desktop hover mega-menu here: that's a different
+          interaction model. If a category has sub-content the user wants,
+          they tap into the category landing page and discover it there. */}
+      <div
+        id="pm-mobile-nav"
+        className="md:hidden"
+        aria-hidden={!mobileNavOpen}
+        // The wrapper itself is always in the DOM; pointer-events toggle
+        // means a closed drawer never intercepts clicks on the page even
+        // while the slide-out transition is still finishing.
+        style={{ pointerEvents: mobileNavOpen ? 'auto' : 'none' }}
+      >
+        {/* Backdrop — tap to close. Fades with opacity so the page
+            doesn't flash to black on close. */}
+        <button
+          type="button"
+          aria-label="Close menu"
+          tabIndex={mobileNavOpen ? 0 : -1}
+          onClick={() => setMobileNavOpen(false)}
+          className={`fixed inset-0 z-[60] bg-pm-ink-900/45 transition-opacity duration-200 ${
+            mobileNavOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        {/* Drawer panel — slides in from the LEFT. fixed + z above the
+            backdrop. Max-width clamped so on wide-ish phones / small
+            tablets it doesn't span the entire viewport. */}
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site navigation"
+          className={`fixed inset-y-0 left-0 z-[70] flex w-[min(86vw,320px)] flex-col bg-white text-pm-ink-900 shadow-2xl transition-transform duration-200 ease-pm-standard ${
+            mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-pm-ink-200 px-4 py-3">
+            <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-pm-ink-500">
+              Menu
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close menu"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-pm-ink-900 transition-colors hover:bg-pm-ink-100"
+            >
+              <X size={22} strokeWidth={1.75} />
+            </button>
+          </div>
+          {/* Scrolling category list */}
+          <nav aria-label="Mobile primary" className="flex-1 overflow-y-auto py-2">
+            {categories.map((cat) => (
+              <Link
+                key={cat.key}
+                href={cat.href}
+                onClick={() => setMobileNavOpen(false)}
+                className="flex min-h-[48px] items-center px-4 py-2 text-[15px] font-medium text-pm-ink-900 transition-colors hover:bg-pm-ink-100"
+              >
+                {cat.label}
+              </Link>
+            ))}
+          </nav>
+        </aside>
       </div>
     </header>
   );

@@ -24,7 +24,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { PM_CATEGORIES } from '~/lib/pm-categories';
 import { usePmCategories } from '~/lib/pm-mega-menu-context';
 import { PmRangeSlider } from '~/components/pm-range-slider';
@@ -231,9 +231,34 @@ export function PmFacetSidebar({
     : PM_CATEGORIES
   ).filter((c) => c.key !== 'bulk');
 
-  return (
-    <aside className="hidden lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:block lg:self-start">
-      <div className="flex flex-col gap-2 divide-y divide-pm-ink-200">
+  // Mobile drawer state — only relevant <lg, where the sticky sidebar is
+  // hidden and a "Filters" trigger renders in its place. Desktop never
+  // reaches this state (the open button is `lg:hidden`).
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Body scroll lock + Esc-to-close while drawer is open. Cleans up
+  // both on close and on unmount so nothing strands the page.
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileFiltersOpen(false);
+    };
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [mobileFiltersOpen]);
+
+  // The actual filter content — extracted to a const so it can be
+  // rendered in BOTH the desktop sticky sidebar AND the mobile drawer
+  // without duplicating the JSX. All form state lives in URL params
+  // (managed by the handlers below), so the same controls can appear in
+  // two places safely — only one is visible at a time per breakpoint.
+  const filterContent = (
+    <div className="flex flex-col gap-2 divide-y divide-pm-ink-200">
         {!pinnedCategorySlug && (
           <FacetGroup title="Category">
             <ul className="flex flex-col gap-2">
@@ -354,7 +379,85 @@ export function PmFacetSidebar({
           </div>
         )}
       </div>
-    </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile-only "Filters" trigger — renders where the sidebar would
+          be in the listing grid (top of the products column on <lg).
+          Tap-friendly (h-11). Hidden from lg+ since the sticky sidebar
+          handles it there. */}
+      <button
+        type="button"
+        onClick={() => setMobileFiltersOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={mobileFiltersOpen}
+        aria-controls="pm-mobile-filters"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-4 text-sm font-semibold text-pm-ink-900 transition-colors hover:bg-pm-ink-100 lg:hidden"
+      >
+        <SlidersHorizontal size={16} strokeWidth={1.75} />
+        Filters
+      </button>
+
+      {/* Desktop sticky sidebar — unchanged from before, only the inner
+          content was hoisted into the const above so we can reuse it
+          inside the mobile drawer as well. */}
+      <aside className="hidden lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:block lg:self-start">
+        {filterContent}
+      </aside>
+
+      {/* Mobile drawer — same filter UI, slides in from the RIGHT.
+          Always in DOM so transitions animate; pointer-events toggled so
+          a closed drawer never intercepts clicks on the page. */}
+      <div
+        id="pm-mobile-filters"
+        className="lg:hidden"
+        aria-hidden={!mobileFiltersOpen}
+        style={{ pointerEvents: mobileFiltersOpen ? 'auto' : 'none' }}
+      >
+        <button
+          type="button"
+          aria-label="Close filters"
+          tabIndex={mobileFiltersOpen ? 0 : -1}
+          onClick={() => setMobileFiltersOpen(false)}
+          className={`fixed inset-0 z-[60] bg-pm-ink-900/45 transition-opacity duration-200 ${
+            mobileFiltersOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product filters"
+          className={`fixed inset-y-0 right-0 z-[70] flex w-[min(92vw,360px)] flex-col bg-white text-pm-ink-900 shadow-2xl transition-transform duration-200 ease-pm-standard ${
+            mobileFiltersOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-pm-ink-200 px-4 py-3">
+            <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-pm-ink-500">
+              Filters
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(false)}
+              aria-label="Close filters"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-pm-ink-900 transition-colors hover:bg-pm-ink-100"
+            >
+              <X size={22} strokeWidth={1.75} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4">{filterContent}</div>
+          <div className="border-t border-pm-ink-200 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(false)}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-pm-terracotta px-4 text-sm font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+            >
+              Show results
+            </button>
+          </div>
+        </aside>
+      </div>
+    </>
   );
 }
 
