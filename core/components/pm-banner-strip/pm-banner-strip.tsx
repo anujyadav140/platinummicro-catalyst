@@ -91,7 +91,7 @@ function BannerItem({ banner }: { banner: PmBanner }) {
     <div className="relative py-2.5">
       <div
         ref={ref}
-        className="banner-rich mx-auto max-w-pm-container px-12 text-center text-[13.5px] leading-relaxed"
+        className="banner-rich mx-auto max-w-pm-container px-10 text-center text-[13px] leading-relaxed sm:px-12 sm:text-[13.5px]"
         dangerouslySetInnerHTML={{ __html: banner.content }}
       />
       {copiedCode && (

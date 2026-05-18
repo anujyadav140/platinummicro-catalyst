@@ -45,12 +45,12 @@ export function PmAudienceStrip({
   segments = PM_SEGMENTS,
 }: PmAudienceStripProps) {
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-pm-container px-8">
+    <section className="py-12 sm:py-16 md:py-20">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-pm-tan">
           Who we serve
         </div>
-        <h2 className="mb-9 text-[28px] font-bold leading-[1.2] tracking-[-0.018em] text-pm-ink-900 md:text-[32px]">
+        <h2 className="mb-6 text-[24px] font-bold leading-[1.2] tracking-[-0.018em] text-pm-ink-900 sm:mb-9 sm:text-[28px] md:text-[32px]">
           {title}
         </h2>
 

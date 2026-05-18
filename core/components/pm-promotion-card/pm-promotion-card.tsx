@@ -27,7 +27,7 @@ export function PmPromotionCard({ promo }: PmPromotionCardProps) {
 
   return (
     <div
-      className={`relative flex flex-col gap-3 rounded-lg border border-pm-ink-200 bg-white p-6 ${
+      className={`relative flex flex-col gap-3 rounded-lg border border-pm-ink-200 bg-white p-5 sm:p-6 ${
         promo.isActive ? '' : 'opacity-60'
       }`}
     >
@@ -46,12 +46,12 @@ export function PmPromotionCard({ promo }: PmPromotionCardProps) {
       </span>
 
       {/* Big summary line — the headline number ("10% off") */}
-      <div className="text-[26px] font-bold leading-[1.15] tracking-[-0.018em] text-pm-navy-deep">
+      <div className="text-[22px] font-bold leading-[1.15] tracking-[-0.018em] text-pm-navy-deep sm:text-[26px]">
         {promo.summary}
       </div>
 
       {/* Marketing headline from the admin notification */}
-      <p className="text-[14px] leading-[1.5] text-pm-ink-700">{promo.headline}</p>
+      <p className="text-sm leading-[1.5] text-pm-ink-700">{promo.headline}</p>
 
       {/* Optional end-date footnote */}
       {promo.endsAt && (

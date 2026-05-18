@@ -168,9 +168,9 @@ export function PmBrandsSection({ section }: PmBrandsSectionProps) {
 
   return (
     <section style={{ backgroundColor: bgColor, paddingTop: paddingY, paddingBottom: paddingY }}>
-      <div className="mx-auto max-w-pm-container px-8">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         {/* Header — eyebrow + title on the left, CTA link on the right */}
-        <div className="mb-9 flex items-end justify-between gap-6">
+        <div className="mb-6 flex items-end justify-between gap-4 sm:mb-9 sm:gap-6">
           <div>
             {eyebrow && (
               <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-pm-tan">
@@ -178,7 +178,7 @@ export function PmBrandsSection({ section }: PmBrandsSectionProps) {
               </div>
             )}
             {title && (
-              <h2 className="text-[28px] font-bold leading-[1.2] tracking-[-0.018em] text-pm-ink-900 md:text-[32px]">
+              <h2 className="text-[24px] font-bold leading-[1.2] tracking-[-0.018em] text-pm-ink-900 sm:text-[28px] md:text-[32px]">
                 {title}
               </h2>
             )}
@@ -186,7 +186,7 @@ export function PmBrandsSection({ section }: PmBrandsSectionProps) {
           {ctaLabel && ctaHref && (
             <Link
               href={ctaHref}
-              className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-pm-navy-deep transition-colors hover:text-pm-terracotta"
+              className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 text-[14px] font-semibold text-pm-navy-deep transition-colors hover:text-pm-terracotta"
             >
               {ctaLabel}
               <ArrowRight size={14} strokeWidth={2.25} />
@@ -218,14 +218,14 @@ export function PmBrandsSection({ section }: PmBrandsSectionProps) {
             mounted at fixed width and fade when there's nothing left
             to scroll in that direction — preserving layout (no shift
             when the rail reaches an edge). */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Left arrow */}
           <button
             type="button"
             onClick={() => scrollByPage(-1)}
             disabled={!canScrollLeft}
             aria-label="Scroll brands left"
-            className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-pm-navy-deep bg-white text-pm-navy-deep shadow-sm transition-all duration-pm-base ease-pm-standard hover:bg-pm-navy-deep hover:text-white hover:shadow-md disabled:cursor-default disabled:border-pm-ink-200 disabled:bg-white disabled:text-pm-ink-300 disabled:shadow-none disabled:hover:bg-white disabled:hover:text-pm-ink-300 disabled:hover:shadow-none"
+            className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-pm-navy-deep bg-white text-pm-navy-deep shadow-sm transition-all duration-pm-base ease-pm-standard hover:bg-pm-navy-deep hover:text-white hover:shadow-md disabled:cursor-default disabled:border-pm-ink-200 disabled:bg-white disabled:text-pm-ink-300 disabled:shadow-none disabled:hover:bg-white disabled:hover:text-pm-ink-300 disabled:hover:shadow-none sm:h-10 sm:w-10"
           >
             <ChevronLeft size={18} strokeWidth={2.25} />
           </button>
@@ -263,7 +263,7 @@ export function PmBrandsSection({ section }: PmBrandsSectionProps) {
             onClick={() => scrollByPage(1)}
             disabled={!canScrollRight}
             aria-label="Scroll brands right"
-            className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-pm-navy-deep bg-white text-pm-navy-deep shadow-sm transition-all duration-pm-base ease-pm-standard hover:bg-pm-navy-deep hover:text-white hover:shadow-md disabled:cursor-default disabled:border-pm-ink-200 disabled:bg-white disabled:text-pm-ink-300 disabled:shadow-none disabled:hover:bg-white disabled:hover:text-pm-ink-300 disabled:hover:shadow-none"
+            className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-pm-navy-deep bg-white text-pm-navy-deep shadow-sm transition-all duration-pm-base ease-pm-standard hover:bg-pm-navy-deep hover:text-white hover:shadow-md disabled:cursor-default disabled:border-pm-ink-200 disabled:bg-white disabled:text-pm-ink-300 disabled:shadow-none disabled:hover:bg-white disabled:hover:text-pm-ink-300 disabled:hover:shadow-none sm:h-10 sm:w-10"
           >
             <ChevronRight size={18} strokeWidth={2.25} />
           </button>

@@ -23,11 +23,11 @@ export function PmAboutBanner({
 }: PmAboutBannerProps) {
   return (
     <section className="bg-pm-navy-deepest text-white">
-      <div className="mx-auto max-w-[920px] px-8 py-20 text-center">
+      <div className="mx-auto max-w-[920px] px-4 py-12 text-center sm:px-6 sm:py-16 md:px-8 md:py-20">
         <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-pm-terracotta-light">
           {eyebrow}
         </div>
-        <p className="text-[18px] leading-[1.65] text-white/85">{body}</p>
+        <p className="text-[15px] leading-[1.65] text-white/85 sm:text-[16px] md:text-[18px]">{body}</p>
       </div>
     </section>
   );

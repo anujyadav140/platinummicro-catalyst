@@ -30,21 +30,21 @@ export function PmHero({
 }: PmHeroProps) {
   return (
     <section className="overflow-hidden bg-pm-navy-deep text-white">
-      <div className="mx-auto grid max-w-pm-container grid-cols-1 items-stretch gap-0 px-8 lg:grid-cols-[1.1fr_1fr] lg:min-h-[480px]">
+      <div className="mx-auto grid max-w-pm-container grid-cols-1 items-stretch gap-0 px-4 sm:px-6 md:px-8 lg:grid-cols-[1.1fr_1fr] lg:min-h-[480px]">
         {/* ============================== LEFT ============================ */}
-        <div className="flex flex-col justify-center gap-6 py-20 lg:pr-14">
+        <div className="flex flex-col justify-center gap-5 py-12 sm:gap-6 sm:py-16 md:py-20 lg:pr-14">
           {eyebrow && (
             <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-pm-terracotta-light">
               {eyebrow}
             </span>
           )}
 
-          <h1 className="text-[clamp(36px,4.4vw,56px)] font-bold leading-[1.05] tracking-[-0.02em] text-white">
+          <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-[clamp(32px,4.4vw,56px)] sm:leading-[1.05]">
             {headline}
           </h1>
 
           {lead && (
-            <p className="max-w-[520px] text-[17px] leading-[1.6] text-white/[0.78]">
+            <p className="max-w-[520px] text-[15px] leading-[1.6] text-white/[0.78] sm:text-[17px]">
               {lead}
             </p>
           )}
@@ -69,10 +69,10 @@ export function PmHero({
           </div>
 
           {stats && stats.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-10 border-t border-white/[0.12] pt-6">
+            <div className="mt-6 flex flex-wrap gap-6 border-t border-white/[0.12] pt-6 sm:gap-10">
               {stats.map((stat) => (
                 <div key={stat.label}>
-                  <div className="text-[26px] font-bold leading-none text-white">
+                  <div className="text-[22px] font-bold leading-none text-white sm:text-[26px]">
                     {stat.value}
                   </div>
                   <div className="mt-1.5 text-[11px] uppercase tracking-[0.14em] text-white/60">
@@ -85,7 +85,7 @@ export function PmHero({
         </div>
 
         {/* ============================== RIGHT =========================== */}
-        <div className="relative -mr-8 flex flex-col justify-center gap-4 bg-pm-tan-pale py-14 px-14 lg:py-14">
+        <div className="relative flex flex-col justify-center gap-4 bg-pm-tan-pale px-5 py-10 sm:px-8 sm:py-12 md:px-14 md:py-14 lg:-mr-8">
           {featureCard && (
             <div className="rounded-lg border border-pm-ink-200 bg-white p-[22px] shadow-[0_2px_4px_rgba(7,21,37,0.06),0_4px_8px_rgba(7,21,37,0.05)]">
               {featureCard.eyebrow && (

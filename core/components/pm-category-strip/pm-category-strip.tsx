@@ -83,8 +83,8 @@ export function PmCategoryStrip({
     tilesProp ??
     tilesFromCategories(fromContext.length > 0 ? fromContext : PM_CATEGORIES);
   return (
-    <section className="bg-pm-ink-100 py-20">
-      <div className="mx-auto max-w-pm-container px-8">
+    <section className="bg-pm-ink-100 py-12 sm:py-16 md:py-20">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         <PmSectionHeader
           eyebrow={eyebrow}
           title={title}

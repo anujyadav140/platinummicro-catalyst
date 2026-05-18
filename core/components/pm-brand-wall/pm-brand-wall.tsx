@@ -189,8 +189,8 @@ export function PmBrandWall({
   const showScrollbar = thumb.width < 100;
 
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-pm-container px-8">
+    <section className="py-12 sm:py-16 md:py-20">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         <PmSectionHeader
           eyebrow={eyebrow}
           title={title}

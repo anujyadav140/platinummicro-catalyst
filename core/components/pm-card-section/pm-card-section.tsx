@@ -171,7 +171,7 @@ export function PmCardSection({ section }: PmCardSectionProps) {
     <section
       style={{ backgroundColor: bgColor, paddingTop: paddingY, paddingBottom: paddingY }}
     >
-      <div className="mx-auto max-w-pm-container px-8">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         {(eyebrow || title || subtitle || (sectionLogos && sectionLogos.length > 0)) && (() => {
           // Partner-brand logo row — native <img> (not next/image) because
           // logos are often SVG or data URIs whose intrinsic size we don't
@@ -210,7 +210,7 @@ export function PmCardSection({ section }: PmCardSectionProps) {
               )}
               {title && (
                 <h2
-                  className={`text-[28px] font-bold leading-[1.2] tracking-[-0.018em] md:text-[32px] ${headingClass}`}
+                  className={`text-[24px] font-bold leading-[1.2] tracking-[-0.018em] sm:text-[28px] md:text-[32px] ${headingClass}`}
                 >
                   {title}
                 </h2>
@@ -231,11 +231,11 @@ export function PmCardSection({ section }: PmCardSectionProps) {
           // the eyebrow/title is the higher-priority anchor).
           if (hasLogos && sectionLogoPosition === 'top-right') {
             return (
-              <div className="mb-9 flex flex-col gap-6 md:flex-row md:items-start md:justify-between md:gap-10">
+              <div className="mb-6 flex flex-col gap-5 sm:mb-9 sm:gap-6 md:flex-row md:items-start md:justify-between md:gap-10">
                 <div className={`flex-1 ${align === 'center' ? 'text-center' : 'text-left'}`}>
                   {headerText}
                 </div>
-                <div className="shrink-0 md:pt-1">{logoRow}</div>
+                <div className="max-w-full shrink-0 overflow-hidden md:pt-1">{logoRow}</div>
               </div>
             );
           }
@@ -243,10 +243,10 @@ export function PmCardSection({ section }: PmCardSectionProps) {
           // Default `above-eyebrow`: logos as a row sitting above the
           // eyebrow text. Original layout, preserved as the default.
           return (
-            <div className={`mb-9 ${align === 'center' ? 'text-center' : 'text-left'}`}>
+            <div className={`mb-6 sm:mb-9 ${align === 'center' ? 'text-center' : 'text-left'}`}>
               {logoRow && (
                 <div
-                  className={`mb-5 flex ${align === 'center' ? 'justify-center' : 'justify-start'}`}
+                  className={`mb-5 flex max-w-full overflow-hidden ${align === 'center' ? 'justify-center' : 'justify-start'}`}
                 >
                   {logoRow}
                 </div>

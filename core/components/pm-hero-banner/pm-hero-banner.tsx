@@ -87,7 +87,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
   // 32px gutters (matches the rest of the site).
   const innerContainerClass = fullBleed
     ? 'mx-auto flex flex-col sm:flex-row'
-    : 'mx-auto flex max-w-pm-container flex-col px-8 sm:flex-row';
+    : 'mx-auto flex max-w-pm-container flex-col px-4 sm:px-6 md:px-8 sm:flex-row';
   // Border radius — applied to the outer <section> with overflow:hidden
   // so bg layers and split halves stay clipped to the curve. The split
   // mode also benefits because the image side's bg-image gets rounded.
@@ -183,7 +183,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
     };
     const imageHalf = (
       <div
-        className="flex min-h-[280px] flex-1 items-center justify-center"
+        className="flex min-h-[220px] flex-1 items-center justify-center sm:min-h-[280px]"
         style={imageSideStyle}
         aria-label={headline ?? undefined}
       />
@@ -220,7 +220,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         {hasCta && (
           <Link
             href={ctaHref!}
-            className="mt-6 inline-flex items-center gap-2 rounded-md bg-pm-terracotta px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.06em] text-white shadow-sm transition-colors hover:bg-pm-terracotta-light"
+            className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-pm-terracotta px-5 py-3 text-[13px] font-bold uppercase tracking-[0.06em] text-white shadow-sm transition-colors hover:bg-pm-terracotta-light"
             style={ctaStyle}
           >
             {ctaLabel}
@@ -275,7 +275,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         {fullBleed ? (
           card
         ) : (
-          <div className="mx-auto max-w-pm-container px-8">{card}</div>
+          <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">{card}</div>
         )}
       </section>
     );
@@ -289,7 +289,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
       >
         {bgLayers}
         <div
-          className={`relative ${fullBleed ? 'mx-auto flex flex-col items-center gap-8 sm:flex-row' : 'mx-auto flex max-w-pm-container flex-col items-center gap-8 px-8 sm:flex-row'} ${align === 'center' ? 'sm:items-center' : ''}`}
+          className={`relative ${fullBleed ? 'mx-auto flex flex-col items-center gap-6 sm:flex-row sm:gap-8' : 'mx-auto flex max-w-pm-container flex-col items-center gap-6 px-4 sm:flex-row sm:gap-8 sm:px-6 md:px-8'} ${align === 'center' ? 'sm:items-center' : ''}`}
           style={{
             minHeight: height,
             paddingTop: paddingY,
@@ -317,7 +317,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
             {hasCta && (
               <Link
                 href={ctaHref!}
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-pm-terracotta px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-pm-terracotta-light"
+                className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-pm-terracotta px-5 py-3 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-pm-terracotta-light"
                 style={ctaStyle}
               >
                 {ctaLabel}
@@ -334,7 +334,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
               text-only banner), the rail collapses out and the text
               column gets the whole width. */}
           {(hasImages || logoUrl) && (
-            <div className="flex flex-1 items-center justify-end gap-5">
+            <div className="flex w-full flex-1 items-center justify-center gap-4 sm:w-auto sm:justify-end sm:gap-5">
               {logoUrl && (
                 <Image
                   src={logoUrl}
@@ -342,11 +342,11 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
                   width={320}
                   height={128}
                   sizes="320px"
-                  className="h-16 w-auto shrink-0 object-contain"
+                  className="h-12 w-auto shrink-0 object-contain sm:h-16"
                 />
               )}
               {hasImages && (
-                <div className="flex flex-1 items-center justify-end gap-3 sm:gap-4">
+                <div className="flex flex-1 items-center justify-center gap-2 sm:justify-end sm:gap-3 md:gap-4">
                   {allImages.map((url, idx) => (
                     <Image
                       key={`${url}-${idx}`}
@@ -368,12 +368,12 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
                       // proportional. Single image gets more room; 2+ shrink.
                       className={`w-auto shrink object-contain ${
                         imageCount === 1
-                          ? 'max-h-[280px]'
+                          ? 'max-h-[200px] sm:max-h-[280px]'
                           : imageCount === 2
-                            ? 'max-h-[240px]'
+                            ? 'max-h-[160px] sm:max-h-[240px]'
                             : imageCount === 3
-                              ? 'max-h-[200px]'
-                              : 'max-h-[180px]'
+                              ? 'max-h-[140px] sm:max-h-[200px]'
+                              : 'max-h-[120px] sm:max-h-[180px]'
                       }`}
                     />
                   ))}
@@ -432,7 +432,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
       )}
 
       <div
-        className={`relative ${fullBleed ? 'mx-auto flex flex-col justify-center' : 'mx-auto flex max-w-pm-container flex-col justify-center px-8'} ${align === 'center' ? 'items-center text-center' : 'items-start text-left'}`}
+        className={`relative ${fullBleed ? 'mx-auto flex flex-col justify-center' : 'mx-auto flex max-w-pm-container flex-col justify-center px-4 sm:px-6 md:px-8'} ${align === 'center' ? 'items-center text-center' : 'items-start text-left'}`}
         style={{
           minHeight: height,
           paddingTop: paddingY,
@@ -464,14 +464,14 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         )}
         {headline && (
           <h1
-            className={`max-w-[680px] text-[32px] font-bold leading-[1.15] tracking-tight sm:text-[44px] ${headingClass}`}
+            className={`max-w-[680px] text-[28px] font-bold leading-[1.15] tracking-tight sm:text-[32px] md:text-[44px] ${headingClass}`}
           >
             {headline}
           </h1>
         )}
         {body && (
           <p
-            className={`mt-4 max-w-[640px] text-[16px] leading-[1.65] sm:text-[18px] ${bodyClass}`}
+            className={`mt-4 max-w-[640px] text-[15px] leading-[1.6] sm:text-[16px] md:text-[18px] md:leading-[1.65] ${bodyClass}`}
           >
             {body}
           </p>
@@ -479,7 +479,7 @@ export function PmHeroBanner({ banner }: PmHeroBannerProps) {
         {hasCta && (
           <Link
             href={ctaHref!}
-            className="mt-6 inline-flex items-center gap-2 rounded-md bg-pm-terracotta px-6 py-3 text-[14px] font-semibold text-white shadow-md transition-colors hover:bg-pm-terracotta-light"
+            className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-pm-terracotta px-6 py-3 text-[14px] font-semibold text-white shadow-md transition-colors hover:bg-pm-terracotta-light"
             style={ctaStyle}
           >
             {ctaLabel}
