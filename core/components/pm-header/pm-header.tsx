@@ -61,7 +61,7 @@ export function PmHeader({
   categories: categoriesProp,
   onQuickOrder,
   onOpenQuote,
-  searchAction = '/dev/preview/api/search',
+  searchAction = '/dev/preview/search',
   searchPlaceholder = 'Search by keyword, brand, or SKU',
   accountHref = '/account',
   logoSrc = '/pm/logo.png',

@@ -39,8 +39,20 @@ import type { PmSearchHit } from '~/lib/pm-search';
 
 export interface PmSearchTypeaheadProps {
   placeholder?: string;
-  /** Submit-target for the GET fallback (no-JS / Enter with no hits). */
+  /**
+   * Form submit target for the GET fallback. MUST be a real search-results
+   * PAGE, not a JSON API — when JS hasn't hydrated yet (think mobile
+   * Chrome on first tap), the browser does a native form submission to
+   * this URL. Sending users to a JSON endpoint here makes them land on
+   * a pretty-printed JSON dump, which is exactly the bug we're avoiding.
+   */
   searchAction?: string;
+  /**
+   * XHR endpoint for typeahead suggestions (returns PmSearchResult JSON).
+   * Distinct from `searchAction` so we don't accidentally point the form
+   * fallback at a JSON endpoint.
+   */
+  typeaheadApi?: string;
   /** Where to navigate "View all N results" — accepts a query string. */
   resultsHref?: (query: string) => string;
 }
@@ -63,7 +75,8 @@ const PANEL_ID = 'pm-search-typeahead-panel';
 
 export function PmSearchTypeahead({
   placeholder = 'Search by keyword, brand, or SKU',
-  searchAction = '/dev/preview/api/search',
+  searchAction = '/dev/preview/search',
+  typeaheadApi = '/dev/preview/api/search',
   resultsHref = (q) => `/dev/preview/search?q=${encodeURIComponent(q)}`,
 }: PmSearchTypeaheadProps) {
   const router = useRouter();
@@ -99,7 +112,7 @@ export function PmSearchTypeahead({
     setLoading(true);
     try {
       const res = await fetch(
-        `${searchAction}?q=${encodeURIComponent(q)}&limit=8`,
+        `${typeaheadApi}?q=${encodeURIComponent(q)}&limit=8`,
         { signal: ctrl.signal },
       );
       if (!res.ok) throw new Error(`search ${res.status}`);
@@ -120,7 +133,7 @@ export function PmSearchTypeahead({
       // Only clear loading if this request is still the latest one.
       if (abortRef.current === ctrl) setLoading(false);
     }
-  }, [searchAction]);
+  }, [typeaheadApi]);
 
   // Debounce: typing → fetch
   useEffect(() => {
