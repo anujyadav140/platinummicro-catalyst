@@ -232,7 +232,7 @@ export function PmFacetSidebar({
   ).filter((c) => c.key !== 'bulk');
 
   return (
-    <aside className="lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:self-start">
+    <aside className="hidden lg:sticky lg:top-[calc(var(--pm-header-top-h)+var(--pm-header-nav-h)+24px)] lg:block lg:self-start">
       <div className="flex flex-col gap-2 divide-y divide-pm-ink-200">
         {!pinnedCategorySlug && (
           <FacetGroup title="Category">
@@ -241,7 +241,7 @@ export function PmFacetSidebar({
                 const checked = selectedCategories.includes(cat.key);
                 return (
                   <li key={cat.key}>
-                    <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+                    <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -266,7 +266,7 @@ export function PmFacetSidebar({
                 const checked = selectedBrands.includes(brand);
                 return (
                   <li key={brand}>
-                    <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+                    <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -298,7 +298,7 @@ export function PmFacetSidebar({
 
         <FacetGroup title="Availability">
           <div className="flex flex-col gap-2">
-            <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+            <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
               <input
                 type="checkbox"
                 checked={availability.includes('in-stock')}
@@ -307,7 +307,7 @@ export function PmFacetSidebar({
               />
               In stock now
             </label>
-            <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+            <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
               <input
                 type="checkbox"
                 checked={availability.includes('backorder')}
@@ -321,7 +321,7 @@ export function PmFacetSidebar({
 
         <FacetGroup title="Promotions">
           <div className="flex flex-col gap-2">
-            <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+            <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
               <input
                 type="checkbox"
                 checked={onSale}
@@ -330,7 +330,7 @@ export function PmFacetSidebar({
               />
               On sale
             </label>
-            <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-pm-ink-700 hover:text-pm-ink-900">
+            <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm text-pm-ink-700 hover:text-pm-ink-900">
               <input
                 type="checkbox"
                 checked={featured}

@@ -49,12 +49,12 @@ export function PmCategoryListing({
       {/* Single top row — breadcrumb (+ optional count) on the LEFT, controls
           on the RIGHT. Tight `pt-4` so this row sits close to the navy nav
           above instead of floating in dead space. */}
-      <div className="mx-auto max-w-pm-container px-8 pb-6 pt-4">
+      <div className="mx-auto max-w-pm-container px-4 pb-6 pt-4 sm:px-6 md:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
             <nav
               aria-label="Breadcrumb"
-              className="flex items-center gap-2 text-[14px] text-pm-ink-500"
+              className="flex flex-wrap items-center gap-2 text-sm text-pm-ink-500"
             >
               <Link
                 href="/dev/preview"
@@ -73,7 +73,7 @@ export function PmCategoryListing({
               </span>
             </nav>
             {totalCount > 0 && (
-              <div className="text-[12px] text-pm-ink-500">
+              <div className="text-[13px] text-pm-ink-500 sm:text-[12px]">
                 Showing{' '}
                 <span className="font-semibold text-pm-ink-700">
                   {firstIndex}–{lastIndex}
@@ -86,7 +86,7 @@ export function PmCategoryListing({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             <PmViewToggle />
             <PmPageSize />
             <PmSortDropdown />
@@ -95,8 +95,8 @@ export function PmCategoryListing({
       </div>
 
       {/* Two-column main */}
-      <div className="mx-auto max-w-pm-container px-8 pb-16">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[260px_1fr]">
+      <div className="mx-auto max-w-pm-container px-4 pb-16 sm:px-6 md:px-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr] lg:gap-10">
           <PmFacetSidebar
             brands={brands}
             pinnedCategorySlug={category.slug}
@@ -120,7 +120,7 @@ export function PmCategoryListing({
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                 {products.map((product) => (
                   <PmProductCard key={product.id} product={product} />
                 ))}

@@ -83,7 +83,7 @@ export function PmProductRow({ product }: PmProductRowProps) {
   };
 
   return (
-    <article className="group relative flex gap-5 rounded-lg border border-pm-ink-200 bg-white p-4 shadow-sm transition-all duration-[180ms] ease-pm-standard hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group relative flex flex-wrap gap-3 rounded-lg border border-pm-ink-200 bg-white p-3 shadow-sm transition-all duration-[180ms] ease-pm-standard hover:-translate-y-0.5 hover:shadow-md sm:flex-nowrap sm:gap-5 sm:p-4">
       {/* Stretched-link overlay: makes the entire card clickable while
           leaving the buttons in the right column independently clickable
           (they sit at z-10, this Link sits at z-0). */}
@@ -94,7 +94,7 @@ export function PmProductRow({ product }: PmProductRowProps) {
       />
 
       {/* Image */}
-      <div className="relative z-10 flex h-[160px] w-[160px] flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100 pointer-events-none">
+      <div className="relative z-10 flex h-[110px] w-[110px] flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-pm-ink-100 pointer-events-none sm:h-[160px] sm:w-[160px]">
         {product.imageUrl ? (
           // BC CDN image — Catalyst <Image> wrapper substitutes `{:size}`
           // in the BC urlTemplate per-device-width. Fixed 160px tile so
@@ -133,7 +133,7 @@ export function PmProductRow({ product }: PmProductRowProps) {
           </div>
         )}
 
-        <h3 className="line-clamp-2 text-[18px] font-bold leading-[1.25] tracking-tight text-pm-ink-900 transition-colors group-hover:text-pm-navy-deep">
+        <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.25] tracking-tight text-pm-ink-900 transition-colors group-hover:text-pm-navy-deep sm:text-[18px]">
           {product.name}
         </h3>
 
@@ -192,10 +192,10 @@ export function PmProductRow({ product }: PmProductRowProps) {
       </div>
 
       {/* Right column — price + stacked action buttons */}
-      <div className="relative z-10 flex min-w-[200px] flex-shrink-0 flex-col items-stretch justify-between gap-3 border-l border-pm-ink-200 pl-5">
-        <div className="text-right pointer-events-none">
+      <div className="relative z-10 flex w-full flex-shrink-0 flex-col items-stretch justify-between gap-3 border-t border-pm-ink-200 pt-3 sm:w-auto sm:min-w-[200px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+        <div className="text-left pointer-events-none sm:text-right">
           {product.priceLabel ? (
-            <span className="text-[20px] font-bold text-pm-navy-deep">
+            <span className="text-[18px] font-bold text-pm-navy-deep sm:text-[20px]">
               {product.priceLabel}
             </span>
           ) : (
@@ -205,13 +205,13 @@ export function PmProductRow({ product }: PmProductRowProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col">
           {product.inStock ? (
             <button
               type="button"
               onClick={handleAddToBom}
               aria-label={`Add ${product.name} to cart`}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-md bg-pm-terracotta px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light sm:min-h-0"
             >
               <Plus size={14} strokeWidth={2.5} />
               Add to BOM
@@ -225,7 +225,7 @@ export function PmProductRow({ product }: PmProductRowProps) {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              className="inline-flex w-full cursor-default items-center justify-center rounded-md bg-pm-ink-400 px-3 py-2 text-[13px] font-semibold text-white"
+              className="inline-flex min-h-[44px] w-full cursor-default items-center justify-center rounded-md bg-pm-ink-400 px-3 py-2 text-[13px] font-semibold text-white sm:min-h-0"
             >
               Out of stock
             </button>
@@ -237,7 +237,7 @@ export function PmProductRow({ product }: PmProductRowProps) {
             icon={<Star size={14} strokeWidth={2} />}
             iconPosition="right"
             showChevron={false}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-3 py-2 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-pm-ink-300 bg-white px-3 py-2 text-[13px] font-semibold text-pm-ink-900 transition-colors hover:border-pm-ink-500 hover:bg-pm-ink-100 sm:min-h-0"
           />
         </div>
       </div>

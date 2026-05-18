@@ -86,17 +86,22 @@ export function PmPagination({ currentPage, totalPages }: PmPaginationProps) {
       />
 
       <ul className="flex items-center gap-1.5">
+        {/* Mobile-only compact readout: "Page X of Y" — replaces the numbered
+            list on phones so the bar fits without horizontal scroll. */}
+        <li className="inline-flex h-11 items-center px-2 text-sm font-semibold text-pm-ink-700 sm:hidden">
+          Page {currentPage} of {totalPages}
+        </li>
         {pages.map((p, i) =>
           p === 'ellipsis' ? (
             <li
               key={`e-${i}`}
               aria-hidden
-              className="inline-flex h-10 w-6 items-center justify-center text-[14px] text-pm-ink-400"
+              className="hidden h-10 w-6 items-center justify-center text-[14px] text-pm-ink-400 sm:inline-flex"
             >
               …
             </li>
           ) : (
-            <li key={p}>
+            <li key={p} className="hidden sm:block">
               <Link
                 href={buildHref(p)}
                 scroll={false}
@@ -137,7 +142,7 @@ function PaginationStep({
   side: 'prev' | 'next';
 }) {
   const baseClass =
-    'inline-flex h-10 items-center gap-1.5 rounded-md border px-3.5 text-[14px] font-semibold transition-colors';
+    'inline-flex h-11 items-center gap-1.5 rounded-md border px-3.5 text-sm font-semibold transition-colors sm:h-10';
   const enabledClass =
     'border-pm-ink-200 bg-white text-pm-ink-700 hover:bg-pm-ink-100 hover:text-pm-ink-900';
   const disabledClass =

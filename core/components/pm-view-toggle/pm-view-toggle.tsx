@@ -42,7 +42,7 @@ export function PmViewToggle({ paramName = 'view' }: PmViewToggleProps) {
     <div
       role="group"
       aria-label="Product view"
-      className="inline-flex h-10 items-center rounded-md border border-pm-ink-300 bg-white p-0.5"
+      className="inline-flex h-11 items-center rounded-md border border-pm-ink-300 bg-white p-0.5 sm:h-10"
     >
       <ViewButton
         active={current === 'grid'}
@@ -79,7 +79,7 @@ function ViewButton({
       onClick={onClick}
       aria-label={ariaLabel}
       aria-pressed={active}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-[5px] outline-none transition-colors ${
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-[5px] outline-none transition-colors sm:h-9 sm:w-9 ${
         active
           ? 'bg-pm-navy-deep text-white'
           : 'bg-transparent text-pm-ink-500 hover:bg-pm-ink-100 hover:text-pm-ink-900'

@@ -38,8 +38,8 @@ export function PmProductGrid({
   if (products.length === 0 && !showEmpty) return null;
 
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-pm-container px-8">
+    <section className="py-12 sm:py-16 md:py-20">
+      <div className="mx-auto max-w-pm-container px-4 sm:px-6 md:px-8">
         <PmSectionHeader
           eyebrow={eyebrow}
           title={title}
@@ -53,7 +53,7 @@ export function PmProductGrid({
             here.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
             {products.map((product) => (
               <PmProductCard key={product.id} product={product} />
             ))}

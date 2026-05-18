@@ -139,14 +139,14 @@ export function PmSortDropdown({
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex-1 sm:flex-none">
       <button
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="inline-flex h-10 min-w-[180px] items-center justify-between gap-2 rounded-md border border-pm-ink-300 bg-white px-4 text-[14px] font-semibold text-pm-ink-900 outline-none transition-colors hover:border-pm-ink-400 focus-visible:border-pm-navy-light focus-visible:shadow-[0_0_0_3px_rgba(46,109,180,0.15)]"
+        className="inline-flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-pm-ink-300 bg-white px-3 text-sm font-semibold text-pm-ink-900 outline-none transition-colors hover:border-pm-ink-400 focus-visible:border-pm-navy-light focus-visible:shadow-[0_0_0_3px_rgba(46,109,180,0.15)] sm:h-10 sm:w-auto sm:min-w-[180px] sm:px-4"
       >
         <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-pm-ink-500">
           Sort
@@ -181,7 +181,7 @@ export function PmSortDropdown({
                     aria-selected={selected}
                     onClick={() => select(opt.value)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[14px] outline-none transition-colors ${
+                    className={`flex min-h-[44px] w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm outline-none transition-colors ${
                       selected
                         ? 'font-semibold text-pm-navy-deep'
                         : 'text-pm-ink-700'

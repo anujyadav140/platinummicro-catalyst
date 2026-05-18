@@ -75,7 +75,7 @@ export function PmPageSize({
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative hidden sm:block">
       <button
         ref={buttonRef}
         type="button"
@@ -112,7 +112,7 @@ export function PmPageSize({
                     role="option"
                     aria-selected={selected}
                     onClick={() => select(opt)}
-                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[14px] outline-none transition-colors ${
+                    className={`flex min-h-[44px] w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm outline-none transition-colors ${
                       selected
                         ? 'font-semibold text-pm-navy-deep'
                         : 'text-pm-ink-700'

@@ -84,7 +84,7 @@ export function PmProductCard({ product }: PmProductCardProps) {
   };
 
   return (
-    <article className="group relative flex flex-col gap-2.5 rounded-lg border border-pm-ink-200 bg-white p-4 shadow-sm transition-all duration-[180ms] ease-pm-standard hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group relative flex flex-col gap-2 rounded-lg border border-pm-ink-200 bg-white p-3 shadow-sm transition-all duration-[180ms] ease-pm-standard hover:-translate-y-0.5 hover:shadow-md sm:gap-2.5 sm:p-4">
       {/* Stretched-link overlay — catches clicks on every bare surface of
           the card (image, brand eyebrow, title, sku, whitespace, even
           padding). Sits at z-0 so the buttons below can z-10 themselves
@@ -96,7 +96,7 @@ export function PmProductCard({ product }: PmProductCardProps) {
       />
 
       {/* Image */}
-      <div className="pointer-events-none relative z-10 flex h-[160px] items-center justify-center overflow-hidden rounded-md bg-pm-ink-100">
+      <div className="pointer-events-none relative z-10 flex h-[120px] items-center justify-center overflow-hidden rounded-md bg-pm-ink-100 sm:h-[160px]">
         {product.imageUrl ? (
           // BC CDN image — uses Catalyst <Image> wrapper which applies
           // `bcCdnImageLoader` to substitute `{:size}` in the BC urlTemplate
@@ -138,7 +138,7 @@ export function PmProductCard({ product }: PmProductCardProps) {
       )}
 
       {/* Title */}
-      <h3 className="pointer-events-none relative z-10 line-clamp-2 min-h-[38px] text-[14px] font-semibold leading-[1.35] text-pm-ink-900 transition-colors group-hover:text-pm-navy-deep">
+      <h3 className="pointer-events-none relative z-10 line-clamp-2 min-h-[36px] text-[13px] font-semibold leading-[1.35] text-pm-ink-900 transition-colors group-hover:text-pm-navy-deep sm:min-h-[38px] sm:text-[14px]">
         {product.name}
       </h3>
 
@@ -150,10 +150,10 @@ export function PmProductCard({ product }: PmProductCardProps) {
       {/* Footer — re-enables pointer-events on itself (so the Add button
           inside is clickable), but the price half is still p-none so the
           Link overlay catches taps there. */}
-      <div className="relative z-10 mt-1 flex items-center justify-between gap-2 border-t border-pm-ink-200 pt-3">
+      <div className="relative z-10 mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-pm-ink-200 pt-3">
         <div className="pointer-events-none">
           {product.priceLabel ? (
-            <span className="text-[17px] font-bold text-pm-navy-deep">
+            <span className="text-[16px] font-bold text-pm-navy-deep sm:text-[17px]">
               {product.priceLabel}
             </span>
           ) : (
@@ -164,7 +164,7 @@ export function PmProductCard({ product }: PmProductCardProps) {
           type="button"
           onClick={handleAddToCart}
           aria-label={`Add ${product.name} to cart`}
-          className="pointer-events-auto inline-flex items-center gap-1 rounded-md bg-pm-terracotta px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+          className="pointer-events-auto inline-flex min-h-[36px] items-center gap-1 rounded-md bg-pm-terracotta px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light sm:min-h-0 sm:py-1.5"
         >
           <Plus size={12} strokeWidth={2.5} />
           Add

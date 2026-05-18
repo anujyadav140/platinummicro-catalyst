@@ -89,7 +89,7 @@ export function PmCompareBar() {
         80% { transform: translateX(4px); }
       }`}</style>
 
-      <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+      <div className="mx-auto flex max-w-[1280px] items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
         {/* Label + count */}
         <div className="hidden flex-shrink-0 flex-col leading-tight sm:flex">
           <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-pm-tan">
@@ -114,7 +114,7 @@ export function PmCompareBar() {
               key={item.id}
               className="group flex flex-shrink-0 items-center gap-2 rounded-md border border-pm-ink-200 bg-white p-1.5 pr-2 sm:gap-2.5"
             >
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-sm bg-pm-ink-100">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-sm bg-pm-ink-100 sm:h-14 sm:w-14">
                 {item.imageUrl ? (
                   <Image
                     src={item.imageUrl}
@@ -140,7 +140,7 @@ export function PmCompareBar() {
                 type="button"
                 onClick={() => remove(item.id)}
                 aria-label={`Remove ${item.name} from compare`}
-                className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900"
+                className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-pm-ink-500 transition-colors hover:bg-pm-ink-100 hover:text-pm-ink-900 sm:h-6 sm:w-6"
               >
                 <X size={14} strokeWidth={2.25} />
               </button>
@@ -154,7 +154,7 @@ export function PmCompareBar() {
             type="button"
             onClick={clear}
             aria-label="Clear all compare items"
-            className="inline-flex items-center gap-1.5 rounded-md border border-pm-ink-300 bg-white px-3 py-2 text-[13px] font-semibold text-pm-ink-700 transition-colors hover:border-pm-ink-500 hover:text-pm-ink-900"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md border border-pm-ink-300 bg-white px-2.5 py-2 text-[13px] font-semibold text-pm-ink-700 transition-colors hover:border-pm-ink-500 hover:text-pm-ink-900 sm:min-h-0 sm:px-3"
           >
             <Trash2 size={13} strokeWidth={2} />
             <span className="hidden sm:inline">Clear all</span>
@@ -162,7 +162,7 @@ export function PmCompareBar() {
           <Link
             href={COMPARE_HREF}
             aria-label="Open product comparison page"
-            className="inline-flex items-center gap-1.5 rounded-md bg-pm-navy-deep px-3.5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-navy-deep/90"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md bg-pm-navy-deep px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-pm-navy-deep/90 sm:min-h-0 sm:px-3.5"
           >
             Compare
             <ArrowRight size={14} strokeWidth={2.25} />
@@ -171,7 +171,7 @@ export function PmCompareBar() {
             type="button"
             onClick={() => setCollapsed(true)}
             aria-label="Collapse compare tray"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-pm-ink-200 bg-white text-pm-ink-500 transition-colors hover:border-pm-ink-300 hover:text-pm-ink-900"
+            className="hidden h-9 w-9 items-center justify-center rounded-md border border-pm-ink-200 bg-white text-pm-ink-500 transition-colors hover:border-pm-ink-300 hover:text-pm-ink-900 sm:inline-flex"
           >
             <ChevronDown size={16} strokeWidth={2.25} />
           </button>
