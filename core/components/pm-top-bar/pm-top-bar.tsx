@@ -61,12 +61,12 @@ export function PmTopBar({
 
   return (
     <div
-      className="relative bg-pm-navy-deepest text-[13px] text-white/70"
-      style={{ height: 'var(--pm-trust-bar-h)' }}
+      className="relative bg-pm-navy-deepest text-[12px] text-white/70 sm:text-[13px]"
+      style={{ minHeight: 'var(--pm-trust-bar-h)' }}
     >
       {/* Inner container reserves space on the right so the absolute-positioned
           X button never overlaps the phone number. */}
-      <div className="mx-auto flex h-full max-w-pm-container items-center justify-between gap-6 px-8 pr-16">
+      <div className="mx-auto flex min-h-9 max-w-pm-container flex-wrap items-center justify-end gap-x-3 gap-y-1 px-4 py-1.5 pr-10 sm:px-6 sm:pr-12 md:h-full md:flex-nowrap md:justify-between md:gap-6 md:px-8 md:pr-16 md:py-0">
         {trustBarHtml ? (
           <span
             className="hidden md:inline pm-trust-bar-html"
@@ -83,16 +83,18 @@ export function PmTopBar({
           </span>
         )}
 
-        <span className="flex items-center gap-3">
+        <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 md:gap-3">
+          {/* Quick order — hidden on the smallest screens since it duplicates
+              the icon in the main header; reappears from sm+ when there's room. */}
           <button
             type="button"
             onClick={onQuickOrder}
             aria-label="Open quick order modal"
-            className="font-semibold text-white border-b border-dotted border-white/40 hover:border-white transition-colors"
+            className="hidden sm:inline font-semibold text-white border-b border-dotted border-white/40 hover:border-white transition-colors"
           >
             Quick order
           </button>
-          <span className="text-white/40">·</span>
+          <span className="hidden sm:inline text-white/40">·</span>
           {customer ? (
             <a
               href={profileHref}
@@ -112,7 +114,7 @@ export function PmTopBar({
           <span className="text-white/40">·</span>
           <a
             href={`tel:${phone.replace(/[^\d+]/g, '')}`}
-            className="hover:text-white transition-colors"
+            className="whitespace-nowrap hover:text-white transition-colors"
           >
             {phone}
           </a>
@@ -127,7 +129,7 @@ export function PmTopBar({
         onClick={handleDismiss}
         aria-label="Dismiss promotion bar"
         title="Dismiss"
-        className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white sm:right-3"
       >
         <X size={20} strokeWidth={2} />
       </button>

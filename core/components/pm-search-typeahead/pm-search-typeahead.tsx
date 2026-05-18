@@ -196,7 +196,7 @@ export function PmSearchTypeahead({
       method="get"
       onSubmit={handleSubmit}
       role="search"
-      className="relative flex flex-1 items-stretch max-w-[720px]"
+      className="relative flex w-full flex-1 items-stretch md:max-w-[720px]"
     >
       <div
         className={`flex flex-1 items-stretch overflow-hidden rounded-lg border-[1.5px] bg-white transition-all ${
@@ -228,18 +228,19 @@ export function PmSearchTypeahead({
           }
           autoComplete="off"
           spellCheck={false}
-          className="min-w-0 flex-1 border-0 bg-transparent px-[18px] py-[13px] text-[15px] text-pm-ink-900 outline-none placeholder:text-pm-ink-500"
+          className="min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-pm-ink-900 outline-none placeholder:text-pm-ink-500 sm:px-4 sm:text-[15px] md:px-[18px] md:py-[13px]"
         />
         <button
           type="submit"
-          className="shrink-0 inline-flex items-center justify-center gap-2 bg-pm-terracotta px-7 text-[15px] font-semibold text-white transition-colors hover:bg-pm-terracotta-light"
+          aria-label="Search"
+          className="shrink-0 inline-flex h-11 items-center justify-center gap-2 bg-pm-terracotta px-4 text-sm font-semibold text-white transition-colors hover:bg-pm-terracotta-light sm:px-5 md:h-auto md:px-7 md:text-[15px]"
         >
           {loading ? (
             <Loader2 size={16} strokeWidth={2.25} className="animate-spin" />
           ) : (
             <Search size={16} strokeWidth={2.25} />
           )}
-          <span>Search</span>
+          <span className="hidden sm:inline">Search</span>
         </button>
       </div>
 

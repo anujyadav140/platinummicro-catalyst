@@ -156,37 +156,42 @@ export function PmHeader({
       {/* ============================ TOP ROW ============================ */}
       <div className="bg-white text-pm-ink-900 border-b border-pm-ink-200">
         <div
-          className="mx-auto flex max-w-pm-container items-center gap-6 px-8"
-          style={{ height: 'var(--pm-header-top-h)' }}
+          className="mx-auto flex max-w-pm-container flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-6 md:px-8 md:py-0"
+          style={{ minHeight: 'var(--pm-header-top-h)' }}
         >
           {/* Logo */}
           <Link
             href={homeHref}
             aria-label="Platinum Micro home"
-            className="flex shrink-0 items-center"
+            className="order-1 flex shrink-0 items-center"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoSrc} alt="Platinum Micro" width="200" height="56" className="block h-14 w-auto" />
+            <img src={logoSrc} alt="Platinum Micro" width="200" height="56" className="block h-9 w-auto sm:h-10 md:h-14" />
           </Link>
 
           {/* Search field — typeahead with live BC results dropdown.
-              Falls back to the GET endpoint (returns JSON) without JS;
-              the typical flow is JS-on, debounced fetch, click a hit. */}
-          <PmSearchTypeahead
-            placeholder={searchPlaceholder}
-            searchAction={searchAction}
-          />
+              Mobile: wraps onto its own full-width row below the logo/actions
+              via `order-3 w-full` + flex-wrap on the parent.
+              md+: snaps back into the middle of the row with `flex-1`. */}
+          <div className="order-3 flex w-full md:order-2 md:w-auto md:flex-1">
+            <PmSearchTypeahead
+              placeholder={searchPlaceholder}
+              searchAction={searchAction}
+            />
+          </div>
 
-          {/* Action buttons */}
-          <div className="flex shrink-0 items-center gap-[18px]">
+          {/* Action buttons — compact icon-only on mobile, labelled from md+ */}
+          <div className="order-2 flex shrink-0 items-center gap-1 sm:gap-2 md:order-3 md:gap-[18px]">
             <button
               type="button"
               onClick={onQuickOrder}
               title="Quick order — paste SKUs and quantities"
-              className="inline-flex items-center gap-2 px-1 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light"
+              aria-label="Quick order"
+              className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light md:h-auto md:min-w-0 md:px-1"
             >
-              <Box size={18} strokeWidth={1.5} />
-              <span>Quick order</span>
+              <Box size={20} strokeWidth={1.5} className="md:hidden" />
+              <Box size={18} strokeWidth={1.5} className="hidden md:block" />
+              <span className="hidden md:inline">Quick order</span>
             </button>
 
             <PmHeaderAccountControl
@@ -199,12 +204,14 @@ export function PmHeader({
               type="button"
               onClick={onOpenQuote}
               title="Cart"
-              className="relative inline-flex items-center gap-2 px-1 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light"
+              aria-label="Cart"
+              className="relative inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light md:h-auto md:min-w-0 md:px-1"
             >
-              <ShoppingCart size={18} strokeWidth={1.5} />
-              <span>Cart</span>
+              <ShoppingCart size={20} strokeWidth={1.5} className="md:hidden" />
+              <ShoppingCart size={18} strokeWidth={1.5} className="hidden md:block" />
+              <span className="hidden md:inline">Cart</span>
               {quoteCount > 0 && (
-                <span className="absolute -right-2.5 -top-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pm-terracotta px-[5px] text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pm-terracotta px-[5px] text-[10px] font-bold text-white md:-right-2.5">
                   {quoteCount}
                 </span>
               )}
@@ -219,8 +226,8 @@ export function PmHeader({
       <div className="relative bg-pm-navy-deep border-t border-white/5">
         <nav
           aria-label="Primary"
-          className="mx-auto flex max-w-pm-container items-center justify-center gap-1 px-8"
-          style={{ height: 'var(--pm-header-nav-h)' }}
+          className="mx-auto flex max-w-pm-container items-center justify-start gap-1 overflow-x-auto px-4 sm:px-6 md:justify-center md:overflow-x-visible md:px-8"
+          style={{ minHeight: 'var(--pm-header-nav-h)' }}
         >
           {categories.map((cat) => {
             // Show the dropdown chevron + open-on-hover when EITHER source
@@ -284,7 +291,7 @@ export function PmHeader({
               // rail on the right (when present); legacy promo column
               // tucked into the rail when both fit.
               <div
-                className={`mx-auto grid max-w-pm-container gap-6 px-8 py-6 ${
+                className={`mx-auto grid max-w-pm-container gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 md:px-8 ${
                   activeMega.brands && activeMega.brands.length > 0
                     ? 'lg:grid-cols-[1fr_220px]'
                     : 'grid-cols-1'
@@ -385,10 +392,10 @@ export function PmHeader({
               // children for this top-level (so cards is empty/undefined)
               // and the static code-config still provides cols.
               <div
-                className={`mx-auto grid max-w-pm-container gap-8 px-8 py-8 ${
+                className={`mx-auto grid max-w-pm-container gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 md:px-8 ${
                   activeMega.promo
-                    ? 'grid-cols-[repeat(4,1fr)_280px]'
-                    : 'grid-cols-4'
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,1fr)_280px]'
+                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
                 }`}
               >
                 {activeMega.cols.map((col) => (
@@ -502,10 +509,12 @@ function PmHeaderAccountControl({
       <Link
         href={accountHref}
         title="Account"
-        className="inline-flex items-center gap-2 px-1 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light"
+        aria-label="Account"
+        className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-pm-ink-900 transition-colors hover:text-pm-navy-light md:h-auto md:min-w-0 md:px-1"
       >
-        <User size={18} strokeWidth={1.5} />
-        <span>Account</span>
+        <User size={20} strokeWidth={1.5} className="md:hidden" />
+        <User size={18} strokeWidth={1.5} className="hidden md:block" />
+        <span className="hidden md:inline">Account</span>
       </Link>
     );
   }
@@ -518,18 +527,20 @@ function PmHeaderAccountControl({
         aria-haspopup="menu"
         aria-expanded={open}
         title={customer.email}
-        className={`inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors ${
+        aria-label={`Account: ${customer.firstName}`}
+        className={`inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors md:h-auto md:min-w-0 ${
           open
             ? 'bg-pm-ink-100 text-pm-navy-deep'
             : 'text-pm-ink-900 hover:text-pm-navy-light'
         }`}
       >
-        <User size={18} strokeWidth={1.5} />
-        <span>Hi, {customer.firstName}</span>
+        <User size={20} strokeWidth={1.5} className="md:hidden" />
+        <User size={18} strokeWidth={1.5} className="hidden md:block" />
+        <span className="hidden md:inline">Hi, {customer.firstName}</span>
         <ChevronDown
           size={14}
           strokeWidth={2}
-          className={`opacity-60 transition-transform duration-[120ms] ${
+          className={`hidden opacity-60 transition-transform duration-[120ms] md:block ${
             open ? 'rotate-180' : ''
           }`}
         />
@@ -538,7 +549,7 @@ function PmHeaderAccountControl({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-40 mt-1.5 w-[260px] overflow-hidden rounded-md border border-pm-ink-200 bg-white shadow-lg"
+          className="absolute right-0 top-full z-40 mt-1.5 w-[min(260px,calc(100vw-2rem))] overflow-hidden rounded-md border border-pm-ink-200 bg-white shadow-lg sm:w-[260px]"
         >
           <div className="border-b border-pm-ink-100 px-4 py-3">
             <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-pm-tan">
